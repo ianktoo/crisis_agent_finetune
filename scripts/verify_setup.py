@@ -12,6 +12,19 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+def check_python_version():
+    """Check Python version compatibility."""
+    import sys
+    print("Checking Python version...")
+    version = sys.version_info
+    if version.major == 3 and version.minor >= 10:
+        print(f"✓ Python {version.major}.{version.minor}.{version.micro} is compatible")
+        return True
+    else:
+        print(f"✗ Python {version.major}.{version.minor}.{version.micro} is not supported")
+        print("  Required: Python 3.10+")
+        return False
+
 def check_imports():
     """Check if all required packages are installed."""
     print("Checking imports...")
@@ -142,6 +155,7 @@ def main():
     print("=" * 80)
     
     checks = [
+        ("Python Version", check_python_version),
         ("Imports", check_imports),
         ("CUDA", check_cuda),
         ("Configs", check_configs),

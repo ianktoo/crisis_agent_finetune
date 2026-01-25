@@ -11,6 +11,7 @@ Welcome to the crisis-agent fine-tuning pipeline documentation!
 - **[Dataset Info](dataset-info.md)** - Information about the crisis-response-training dataset
 - **[Environment Variables](environment-variables.md)** - All environment variables used by the pipeline
 - **[Model Naming](model-naming.md)** - Guide for controlling output model names and checkpoints
+- **[Python Compatibility](python-compatibility.md)** - Python version compatibility guide
 
 ### Development & Testing
 

@@ -23,9 +23,11 @@ A complete end-to-end pipeline for fine-tuning Mistral-7B as a **crisis companio
 
 ## 📋 Prerequisites
 
-- Python 3.8+
+- Python 3.10+ (tested with Python 3.10.12)
 - CUDA-capable GPU (16GB+ VRAM recommended)
 - Hugging Face account (for dataset access)
+
+> **Note**: Python 3.10.12 is fully supported. The code uses features available in Python 3.9+ (type hints, pathlib, etc.) and is compatible with Python 3.10.12.
 
 > **Note**: This pipeline is optimized for **16GB VRAM servers** (e.g., Jupyter 16G Pytorch). See [docs/hardware-setup.md](docs/hardware-setup.md) for detailed hardware configuration and optimization tips.
 
