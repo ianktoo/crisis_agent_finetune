@@ -35,53 +35,72 @@ def load_dataset_from_config(config_path: Path = Path("configs/dataset_config.ya
     hf_dataset_name = dataset_config["hf_dataset_name"]
     logger.info(f"Loading dataset: {hf_dataset_name}")
     
-    # Validate cache directory
-    cache_dir = Path(dataset_config.get("cache_dir", "data/local_cache"))
-    validate_path(cache_dir, must_exist=False, create_if_missing=True)
-    
-    # Get Hugging Face token (from config or environment variable)
-    hf_token = dataset_config.get("hf_token") or os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
-    
-    # Prepare load_dataset arguments
-    load_kwargs = {
-        "path": hf_dataset_name,
-        "cache_dir": str(cache_dir) if dataset_config.get("use_cache", True) else None,
-    }
-    
-    # Add token if available (for private datasets)
-    if hf_token:
-        load_kwargs["token"] = hf_token
-        logger.info("Using Hugging Face token for authentication")
-    
-    # Add dataset config name if specified
-    if dataset_config.get("dataset_config_name"):
-        load_kwargs["name"] = dataset_config["dataset_config_name"]
-        logger.info(f"Using dataset config: {dataset_config['dataset_config_name']}")
-    
-    # Add revision if specified
-    if dataset_config.get("revision"):
-        load_kwargs["revision"] = dataset_config["revision"]
-        logger.info(f"Using dataset revision: {dataset_config['revision']}")
-    
-    # Load dataset from Hugging Face
-    try:
-        dataset = load_dataset(**load_kwargs)
-        logger.info(f"Successfully loaded dataset: {hf_dataset_name}")
-    except FileNotFoundError as e:
-        raise DatasetError(
-            f"Dataset not found: {hf_dataset_name}. "
-            f"Check that the dataset name is correct and you have access to it. "
-            f"If it's a private dataset, set HF_TOKEN environment variable."
-        ) from e
-    except Exception as e:
-        error_msg = str(e)
-        if "401" in error_msg or "authentication" in error_msg.lower():
+    # Check if loading from local JSONL file
+    if hf_dataset_name.endswith('.jsonl') or hf_dataset_name.endswith('.json'):
+        jsonl_path = Path(hf_dataset_name)
+        if not jsonl_path.is_absolute():
+            jsonl_path = Path(__file__).parent.parent.parent / jsonl_path
+        
+        if not jsonl_path.exists():
+            raise DatasetError(f"JSONL file not found: {jsonl_path}")
+        
+        logger.info(f"Loading from local JSONL file: {jsonl_path}")
+        # Load JSONL - it returns a DatasetDict with 'train' key
+        dataset = load_dataset('json', data_files=str(jsonl_path))
+        logger.info(f"Successfully loaded dataset from {jsonl_path}")
+        
+        # If it's a single dataset, convert to DatasetDict
+        if isinstance(dataset, Dataset):
+            dataset = DatasetDict({"train": dataset})
+    else:
+        # Load from Hugging Face
+        # Validate cache directory
+        cache_dir = Path(dataset_config.get("cache_dir", "data/local_cache"))
+        validate_path(cache_dir, must_exist=False, create_if_missing=True)
+        
+        # Get Hugging Face token (from config or environment variable)
+        hf_token = dataset_config.get("hf_token") or os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
+        
+        # Prepare load_dataset arguments
+        load_kwargs = {
+            "path": hf_dataset_name,
+            "cache_dir": str(cache_dir) if dataset_config.get("use_cache", True) else None,
+        }
+        
+        # Add token if available (for private datasets)
+        if hf_token:
+            load_kwargs["token"] = hf_token
+            logger.info("Using Hugging Face token for authentication")
+        
+        # Add dataset config name if specified
+        if dataset_config.get("dataset_config_name"):
+            load_kwargs["name"] = dataset_config["dataset_config_name"]
+            logger.info(f"Using dataset config: {dataset_config['dataset_config_name']}")
+        
+        # Add revision if specified
+        if dataset_config.get("revision"):
+            load_kwargs["revision"] = dataset_config["revision"]
+            logger.info(f"Using dataset revision: {dataset_config['revision']}")
+        
+        # Load dataset from Hugging Face
+        try:
+            dataset = load_dataset(**load_kwargs)
+            logger.info(f"Successfully loaded dataset: {hf_dataset_name}")
+        except FileNotFoundError as e:
             raise DatasetError(
-                f"Authentication failed for dataset: {hf_dataset_name}. "
-                f"For private datasets, set HF_TOKEN environment variable: "
-                f"export HF_TOKEN='your_token_here'"
+                f"Dataset not found: {hf_dataset_name}. "
+                f"Check that the dataset name is correct and you have access to it. "
+                f"If it's a private dataset, set HF_TOKEN environment variable."
             ) from e
-        raise DatasetError(f"Failed to load dataset: {error_msg}") from e
+        except Exception as e:
+            error_msg = str(e)
+            if "401" in error_msg or "authentication" in error_msg.lower():
+                raise DatasetError(
+                    f"Authentication failed for dataset: {hf_dataset_name}. "
+                    f"For private datasets, set HF_TOKEN environment variable: "
+                    f"export HF_TOKEN='your_token_here'"
+                ) from e
+            raise DatasetError(f"Failed to load dataset: {error_msg}") from e
     
     # Handle different dataset formats
     if isinstance(dataset, Dataset):
