@@ -55,6 +55,11 @@ clean:
 pipeline: train evaluate merge
 	@echo "Full pipeline completed!"
 
+# Verify setup before training
+verify:
+	@echo "Verifying setup..."
+	python scripts/verify_setup.py
+
 # Run tests
 test:
 	@echo "Running tests..."

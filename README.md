@@ -64,13 +64,28 @@ $env:HF_TOKEN="your_huggingface_token_here"     # Windows PowerShell
 
 ### 3. Configuration
 
-Edit the configuration files in `configs/`:
+The dataset is pre-configured to use `ianktoo/crisis-response-training`. Verify the configuration:
 
-- **`dataset_config.yaml`**: Set your Hugging Face dataset name and column mappings
-- **`model_config.yaml`**: Adjust model and LoRA parameters
-- **`training_config.yaml`**: Configure training hyperparameters
+- **`dataset_config.yaml`**: Dataset is already set. **Verify column names** match your dataset structure
+- **`model_config.yaml`**: Adjust model and LoRA parameters if needed
+- **`training_config.yaml`**: Configure training hyperparameters if needed
 
 > **See [docs/dataset-setup.md](docs/dataset-setup.md) for detailed instructions on configuring Hugging Face datasets.**
+
+### 3.5. Verify Setup (Recommended)
+
+Run the verification script to check everything is ready:
+
+```bash
+python scripts/verify_setup.py
+```
+
+This will check:
+- All dependencies are installed
+- CUDA is available
+- Configuration files are valid
+- Dataset is configured correctly
+- Required directories exist
 
 ### 4. Training
 
@@ -404,6 +419,8 @@ For academic publications, please cite:
 4. **Run training** with `python scripts/train.py`
 5. **Evaluate** your crisis companion model
 6. **Deploy** using the merged model or LoRA checkpoint
+
+> **🚀 Ready to deploy?** See [DEPLOYMENT.md](DEPLOYMENT.md) for a complete deployment checklist and quick start guide.
 
 ## 📦 Dataset
 
