@@ -36,6 +36,24 @@ def main():
         help="Maximum number of samples to evaluate"
     )
     parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=4,
+        help="Number of samples to process in parallel (default: 4)"
+    )
+    parser.add_argument(
+        "--fast-generation",
+        action="store_true",
+        default=True,
+        help="Use faster generation settings (greedy decoding) - enabled by default"
+    )
+    parser.add_argument(
+        "--no-fast-generation",
+        action="store_false",
+        dest="fast_generation",
+        help="Disable fast generation (use sampling with temperature)"
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default="outputs/evaluation_report.json",
@@ -89,6 +107,8 @@ def main():
             tokenizer=tokenizer,
             eval_dataset=eval_dataset,
             max_samples=args.max_samples,
+            batch_size=args.batch_size,
+            use_fast_generation=args.fast_generation,
         )
         
         # Generate report
@@ -106,8 +126,11 @@ def main():
         print("=" * 80)
         print(f"Total samples evaluated: {metrics['total_samples']}")
         print(f"Valid JSON: {metrics['valid_json']} ({metrics['valid_json_percent']:.1f}%)")
-        print(f"Valid structure: {metrics['valid_structure']} ({metrics['valid_structure_percent']:.1f}%)")
+        print(f"Valid structured text: {metrics['valid_structured_text']} ({metrics['valid_structured_text_percent']:.1f}%)")
+        print(f"Total valid responses: {metrics['valid_json'] + metrics['valid_structured_text']} ({metrics['total_valid_percent']:.1f}%)")
+        print(f"Valid structure (JSON): {metrics['valid_structure']} ({metrics['valid_structure_percent']:.1f}%)")
         print(f"Invalid JSON: {metrics['invalid_json']}")
+        print(f"Invalid structured text: {metrics['invalid_structured_text']}")
         if metrics['errors']:
             print(f"Errors: {len(metrics['errors'])}")
         if metrics['warnings']:

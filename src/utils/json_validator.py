@@ -127,3 +127,78 @@ def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
         return parsed
     
     return None
+
+
+def validate_structured_text_response(
+    text: str,
+    expected_sections: Optional[List[str]] = None
+) -> Tuple[bool, List[str], Dict[str, Any]]:
+    """
+    Validate structured text response (e.g., FACTS, UNCERTAINTIES format).
+    
+    Args:
+        text: Text response to validate
+        expected_sections: List of expected section headers (e.g., ["FACTS", "UNCERTAINTIES"])
+        
+    Returns:
+        Tuple of (is_valid, warnings, parsed_structure)
+    """
+    warnings = []
+    parsed_structure = {}
+    
+    if not text or not text.strip():
+        return False, ["Empty response"], {}
+    
+    # Common section headers in crisis responses
+    if expected_sections is None:
+        expected_sections = ["FACTS", "UNCERTAINTIES", "ANALYSIS", "ACTIONS", "RESOURCES"]
+    
+    text_upper = text.upper()
+    found_sections = []
+    
+    # Check for section headers
+    for section in expected_sections:
+        if section in text_upper or f"{section}:" in text_upper:
+            found_sections.append(section)
+            # Try to extract section content
+            section_patterns = [
+                f"{section}:",
+                f"{section}\n",
+                f"{section} -",
+            ]
+            for pattern in section_patterns:
+                if pattern in text:
+                    idx = text.find(pattern)
+                    if idx != -1:
+                        # Extract content after section header
+                        content_start = idx + len(pattern)
+                        # Find next section or end
+                        next_section_idx = len(text)
+                        for other_section in expected_sections:
+                            if other_section != section:
+                                next_idx = text.find(f"{other_section}:", content_start)
+                                if next_idx != -1 and next_idx < next_section_idx:
+                                    next_section_idx = next_idx
+                        parsed_structure[section] = text[content_start:next_section_idx].strip()
+                        break
+    
+    # Validation checks
+    if len(found_sections) == 0:
+        warnings.append("No structured sections found (FACTS, UNCERTAINTIES, etc.)")
+    
+    # Check for minimum required sections
+    if "FACTS" not in found_sections:
+        warnings.append("Missing FACTS section")
+    
+    # Check if response has meaningful content
+    if len(text.strip()) < 50:
+        warnings.append("Response too short (less than 50 characters)")
+    
+    # Check for bullet points or structured content
+    has_bullets = "•" in text or "-" in text or "*" in text
+    if not has_bullets and len(found_sections) == 0:
+        warnings.append("No structured formatting detected")
+    
+    is_valid = len(warnings) == 0 or (len(found_sections) > 0 and "FACTS" in found_sections)
+    
+    return is_valid, warnings, {"sections_found": found_sections, "content": parsed_structure}

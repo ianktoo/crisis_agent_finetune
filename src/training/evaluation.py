@@ -5,6 +5,7 @@ Evaluates model on JSON structure, role-adaptation, and crisis-reasoning quality
 
 import json
 import yaml
+import torch
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -12,7 +13,11 @@ from datasets import Dataset
 from tqdm import tqdm
 from src.utils.logging import get_logger
 from src.utils.error_handling import EvaluationError, handle_errors, validate_path
-from src.utils.json_validator import validate_json_structure, validate_crisis_response
+from src.utils.json_validator import (
+    validate_json_structure, 
+    validate_crisis_response,
+    validate_structured_text_response
+)
 
 logger = get_logger(__name__)
 
@@ -36,6 +41,8 @@ def evaluate_model(
     max_samples: int = 100,
     max_new_tokens: int = 512,
     temperature: float = 0.7,
+    batch_size: int = 4,
+    use_fast_generation: bool = True,
 ) -> Dict[str, Any]:
     """
     Evaluate model on evaluation dataset.
@@ -46,13 +53,15 @@ def evaluate_model(
         eval_dataset: Evaluation dataset
         max_samples: Maximum number of samples to evaluate
         max_new_tokens: Maximum tokens to generate
-        temperature: Sampling temperature
+        temperature: Sampling temperature (0.0 = greedy, higher = more random)
+        batch_size: Number of samples to process in parallel
+        use_fast_generation: Use faster generation settings (greedy decoding)
         
     Returns:
         Dictionary with evaluation metrics
     """
     total_samples = min(len(eval_dataset), max_samples)
-    logger.info(f"Evaluating model on {total_samples} samples...")
+    logger.info(f"Evaluating model on {total_samples} samples (batch_size={batch_size}, fast_generation={use_fast_generation})...")
     
     # Limit samples
     eval_samples = eval_dataset.select(range(total_samples))
@@ -63,13 +72,35 @@ def evaluate_model(
         "invalid_json": 0,
         "valid_structure": 0,
         "invalid_structure": 0,
+        "valid_structured_text": 0,
+        "invalid_structured_text": 0,
         "errors": [],
         "warnings": [],
     }
     
+    # Prepare all prompts first
+    prompts = []
+    for sample in eval_samples:
+        instruction = sample.get("instruction", "")
+        if not instruction:
+            # Try to extract from text
+            text = sample.get("text", "")
+            if "[INST]" in text:
+                instruction = text.split("[INST]")[1].split("[/INST]")[0].strip()
+            else:
+                instruction = text.split("\n")[0] if "\n" in text else text
+        prompts.append(f"<s>[INST] {instruction} [/INST]")
+    
+    # Use faster generation settings if enabled
+    if use_fast_generation:
+        gen_temperature = 0.0  # Greedy decoding is faster
+        gen_do_sample = False
+    else:
+        gen_temperature = temperature
+        gen_do_sample = True
+    
     # Create progress bar
     progress_bar = tqdm(
-        enumerate(eval_samples),
         total=len(eval_samples),
         desc="Evaluating",
         unit="sample",
@@ -77,92 +108,108 @@ def evaluate_model(
         bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'
     )
     
-    # Evaluate each sample
-    for idx, sample in progress_bar:
-        try:
-            # Extract instruction
-            instruction = sample.get("instruction", "")
-            if not instruction:
-                # Try to extract from text
-                text = sample.get("text", "")
-                if "[INST]" in text:
-                    instruction = text.split("[INST]")[1].split("[/INST]")[0].strip()
-                else:
-                    instruction = text.split("\n")[0] if "\n" in text else text
+    # Process in batches
+    with torch.inference_mode():  # Faster inference
+        for batch_start in range(0, len(prompts), batch_size):
+            batch_end = min(batch_start + batch_size, len(prompts))
+            batch_prompts = prompts[batch_start:batch_end]
             
-            # Generate response
-            prompt = f"<s>[INST] {instruction} [/INST]"
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-            
-            with _get_generation_context(model):
-                outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=max_new_tokens,
-                    temperature=temperature,
-                    do_sample=True,
-                    pad_token_id=tokenizer.eos_token_id,
-                )
-            
-            # Decode response
-            generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            
-            # Extract response (after [/INST])
-            if "[/INST]" in generated_text:
-                response = generated_text.split("[/INST]")[1].strip()
-            else:
-                response = generated_text[len(prompt):].strip()
-            
-            # Validate JSON
-            is_valid_json, parsed_json, json_error = validate_json_structure(
-                response,
-                strict=False
-            )
-            
-            if is_valid_json:
-                metrics["valid_json"] += 1
+            try:
+                # Tokenize batch
+                inputs = tokenizer(
+                    batch_prompts,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=2048
+                ).to(model.device)
                 
-                # Validate crisis response structure
-                is_valid_structure, warnings = validate_crisis_response(parsed_json)
+                # Generate responses for batch
+                with _get_generation_context(model):
+                    outputs = model.generate(
+                        **inputs,
+                        max_new_tokens=max_new_tokens,
+                        temperature=gen_temperature,
+                        do_sample=gen_do_sample,
+                        pad_token_id=tokenizer.eos_token_id,
+                    )
                 
-                if is_valid_structure:
-                    metrics["valid_structure"] += 1
-                else:
-                    metrics["invalid_structure"] += 1
-                    metrics["warnings"].append({
-                        "sample_idx": idx,
-                        "warnings": warnings
-                    })
-            else:
-                metrics["invalid_json"] += 1
-                metrics["errors"].append({
-                    "sample_idx": idx,
-                    "error": json_error,
-                    "response_preview": response[:200]
+                # Decode and process each response in batch
+                for batch_idx, output in enumerate(outputs):
+                    idx = batch_start + batch_idx
+                    try:
+                        # Decode response
+                        generated_text = tokenizer.decode(output, skip_special_tokens=True)
+                        
+                        # Extract response (after [/INST])
+                        if "[/INST]" in generated_text:
+                            response = generated_text.split("[/INST]")[1].strip()
+                        else:
+                            # Fallback: remove prompt prefix
+                            prompt = batch_prompts[batch_idx]
+                            if generated_text.startswith(prompt):
+                                response = generated_text[len(prompt):].strip()
+                            else:
+                                response = generated_text.strip()
+                        
+                        # Validate JSON
+                        is_valid_json, parsed_json, json_error = validate_json_structure(
+                            response,
+                            strict=False
+                        )
+                        
+                        if is_valid_json:
+                            metrics["valid_json"] += 1
+                            
+                            # Validate crisis response structure
+                            is_valid_structure, warnings = validate_crisis_response(parsed_json)
+                            
+                            if is_valid_structure:
+                                metrics["valid_structure"] += 1
+                            else:
+                                metrics["invalid_structure"] += 1
+                                metrics["warnings"].append({
+                                    "sample_idx": idx,
+                                    "warnings": warnings
+                                })
+                        else:
+                            metrics["invalid_json"] += 1
+                            metrics["errors"].append({
+                                "sample_idx": idx,
+                                "error": json_error,
+                                "response_preview": response[:200]
+                            })
+                        
+                    except Exception as e:
+                        logger.error(f"Error evaluating sample {idx}: {str(e)}")
+                        metrics["errors"].append({
+                            "sample_idx": idx,
+                            "error": f"Evaluation error: {str(e)}"
+                        })
+                
+                # Update progress bar
+                progress_bar.update(batch_end - batch_start)
+                total_valid = metrics["valid_json"] + metrics["valid_structured_text"]
+                valid_pct = (total_valid / batch_end) * 100 if batch_end > 0 else 0
+                progress_bar.set_postfix({
+                    'Valid': f'{total_valid}/{batch_end} ({valid_pct:.1f}%)',
+                    'JSON': metrics["valid_json"],
+                    'Text': metrics["valid_structured_text"]
                 })
-            
-            # Update progress bar with metrics
-            valid_pct = (metrics["valid_json"] / (idx + 1)) * 100
-            progress_bar.set_postfix({
-                'Valid JSON': f'{metrics["valid_json"]}/{idx + 1} ({valid_pct:.1f}%)',
-                'Errors': len(metrics["errors"])
-            })
-            
-            # Log every 10 samples for detailed tracking
-            if (idx + 1) % 10 == 0:
-                logger.info(f"Evaluated {idx + 1}/{len(eval_samples)} samples - Valid JSON: {metrics['valid_json']} ({valid_pct:.1f}%)")
                 
-        except Exception as e:
-            logger.error(f"Error evaluating sample {idx}: {str(e)}")
-            metrics["errors"].append({
-                "sample_idx": idx,
-                "error": f"Evaluation error: {str(e)}"
-            })
-            # Update progress bar even on error
-            valid_pct = (metrics["valid_json"] / (idx + 1)) * 100 if (idx + 1) > 0 else 0
-            progress_bar.set_postfix({
-                'Valid JSON': f'{metrics["valid_json"]}/{idx + 1}',
-                'Errors': len(metrics["errors"])
-            })
+                # Log every 10 samples for detailed tracking
+                if batch_end % 10 == 0 or batch_end == len(eval_samples):
+                    logger.info(f"Evaluated {batch_end}/{len(eval_samples)} samples - Valid JSON: {metrics['valid_json']} ({valid_pct:.1f}%)")
+                    
+            except Exception as e:
+                logger.error(f"Error processing batch {batch_start}-{batch_end}: {str(e)}")
+                # Mark all samples in batch as errors
+                for batch_idx in range(batch_start, batch_end):
+                    metrics["errors"].append({
+                        "sample_idx": batch_idx,
+                        "error": f"Batch processing error: {str(e)}"
+                    })
+                progress_bar.update(batch_end - batch_start)
     
     # Close progress bar
     progress_bar.close()
@@ -170,10 +217,14 @@ def evaluate_model(
     # Calculate percentages
     metrics["valid_json_percent"] = (metrics["valid_json"] / metrics["total_samples"]) * 100
     metrics["valid_structure_percent"] = (metrics["valid_structure"] / metrics["total_samples"]) * 100
+    metrics["valid_structured_text_percent"] = (metrics["valid_structured_text"] / metrics["total_samples"]) * 100
+    metrics["total_valid_percent"] = ((metrics["valid_json"] + metrics["valid_structured_text"]) / metrics["total_samples"]) * 100
     
     logger.info(f"Evaluation complete:")
     logger.info(f"  Valid JSON: {metrics['valid_json']}/{metrics['total_samples']} ({metrics['valid_json_percent']:.1f}%)")
-    logger.info(f"  Valid structure: {metrics['valid_structure']}/{metrics['total_samples']} ({metrics['valid_structure_percent']:.1f}%)")
+    logger.info(f"  Valid structured text: {metrics['valid_structured_text']}/{metrics['total_samples']} ({metrics['valid_structured_text_percent']:.1f}%)")
+    logger.info(f"  Total valid responses: {metrics['valid_json'] + metrics['valid_structured_text']}/{metrics['total_samples']} ({metrics['total_valid_percent']:.1f}%)")
+    logger.info(f"  Valid structure (JSON): {metrics['valid_structure']}/{metrics['total_samples']} ({metrics['valid_structure_percent']:.1f}%)")
     
     return metrics
 
