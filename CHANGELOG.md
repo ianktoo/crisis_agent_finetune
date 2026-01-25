@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Core Features
-- Complete end-to-end fine-tuning pipeline for Mistral-7B crisis-response agent
+- Complete end-to-end fine-tuning pipeline for Mistral-7B crisis companion application
+- Fine-tuned on crisis scenario datasets for emergency response assistance
 - 4-bit quantization support for efficient training on 16GB VRAM
 - LoRA adapter implementation for parameter-efficient fine-tuning
 - Hugging Face dataset integration with automatic loading and caching
@@ -118,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version History
 
 - **1.0.0** (2026-01-25): Initial release
-  - Complete pipeline implementation
+  - Complete pipeline implementation for crisis companion application
+  - Configured for `ianktoo/crisis-response-training` dataset
   - Full documentation
   - Comprehensive test suite
   - Production-ready structure
@@ -136,3 +138,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Attribution
 
 If you use this software, please include attribution as specified in the [LICENSE](LICENSE) file.
+
+### Dataset Citation
+
+If you use the Crisis Response Training Dataset, please cite:
+
+```bibtex
+@dataset{crisis_response_training_2026,
+  title = {Crisis Response Training Dataset},
+  author = {Ian K. T.},
+  year = {2026},
+  url = {https://huggingface.co/datasets/ianktoo/crisis-response-training},
+  note = {Synthetic dataset for training crisis response language models}
+}
+```

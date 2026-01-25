@@ -1,4 +1,5 @@
 # Dataset configuration for crisis-agent fine-tuning
+# This pipeline fine-tunes Mistral-7B as a crisis companion application
 # Configure your Hugging Face dataset here
 
 dataset:
@@ -7,7 +8,7 @@ dataset:
   #   - Public dataset: "username/dataset_name" or "dataset_name"
   #   - Private dataset: "username/private_dataset" (requires HF token)
   #   - With revision: "username/dataset_name:main" or "username/dataset_name:v1.0"
-  hf_dataset_name: "your_username/crisis_dataset"  # UPDATE THIS - Your Hugging Face dataset name
+  hf_dataset_name: "ianktoo/crisis-response-training"  # Crisis scenario training dataset
   
   # Optional: Hugging Face token for private datasets
   # Set via environment variable: export HF_TOKEN="your_token_here"

@@ -8,6 +8,7 @@ Welcome to the crisis-agent fine-tuning pipeline documentation!
 
 - **[Hardware Setup](hardware-setup.md)** - Server specifications, memory optimization, and performance tuning for 16GB VRAM servers
 - **[Dataset Setup](dataset-setup.md)** - Complete guide for configuring and using Hugging Face datasets
+- **[Dataset Info](dataset-info.md)** - Information about the crisis-response-training dataset
 - **[Environment Variables](environment-variables.md)** - All environment variables used by the pipeline
 - **[Model Naming](model-naming.md)** - Guide for controlling output model names and checkpoints
 

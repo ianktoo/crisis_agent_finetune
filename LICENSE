@@ -29,21 +29,33 @@ the following attribution:
 
 ```
 Crisis-Agent Fine-Tuning Pipeline
-https://github.com/yourusername/crisis_agent_finetune
+https://github.com/ianktoo/crisis_agent_finetune
 
-A complete end-to-end pipeline for fine-tuning Mistral-7B as a crisis-response agent
-using Unsloth, LoRA, and Hugging Face datasets.
+A complete end-to-end pipeline for fine-tuning Mistral-7B as a crisis companion application
+using crisis scenario datasets, Unsloth, LoRA, and Hugging Face.
 ```
 
 For academic publications, please cite:
 
+**Pipeline:**
 ```bibtex
 @software{crisis_agent_finetune,
   title = {Crisis-Agent Fine-Tuning Pipeline},
-  author = {Your Name},
+  author = {ianktoo},
   year = {2026},
-  url = {https://github.com/yourusername/crisis_agent_finetune},
-  note = {A complete end-to-end pipeline for fine-tuning Mistral-7B as a crisis-response agent}
+  url = {https://github.com/ianktoo/crisis_agent_finetune},
+  note = {A complete end-to-end pipeline for fine-tuning Mistral-7B as a crisis companion application using crisis scenario datasets}
+}
+```
+
+**Dataset:**
+```bibtex
+@dataset{crisis_response_training_2026,
+  title = {Crisis Response Training Dataset},
+  author = {Ian K. T.},
+  year = {2026},
+  url = {https://huggingface.co/datasets/ianktoo/crisis-response-training},
+  note = {Synthetic dataset for training crisis response language models}
 }
 ```
 

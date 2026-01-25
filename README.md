@@ -2,8 +2,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![GitHub](https://img.shields.io/badge/GitHub-ianktoo%2Fcrisis__agent__finetune-blue)](https://github.com/ianktoo/crisis_agent_finetune)
 
-A complete end-to-end pipeline for fine-tuning Mistral-7B as a crisis-response agent using Unsloth, LoRA, and Hugging Face datasets.
+A complete end-to-end pipeline for fine-tuning Mistral-7B as a **crisis companion application** using crisis scenario datasets, Unsloth, LoRA, and Hugging Face.
+
+> **Purpose**: This pipeline fine-tunes Mistral-7B to serve as a crisis companion that can provide structured, actionable responses to crisis scenarios. The model is trained on crisis-response datasets to assist in emergency situations.
 
 > **Note**: Please see [LICENSE](LICENSE) for attribution requirements if you use this software.
 
@@ -173,13 +176,15 @@ Edit `configs/dataset_config.yaml`:
 
 ```yaml
 dataset:
-  hf_dataset_name: "your_username/crisis_dataset"  # Your dataset
+  hf_dataset_name: "ianktoo/crisis-response-training"  # Crisis scenario training dataset
   train_split: "train"
   eval_split: "validation"
   instruction_column: "instruction"
   response_column: "response"
   max_samples: -1  # -1 for all samples
 ```
+
+> **Note**: The default dataset is configured to use `ianktoo/crisis-response-training`. Update the column names (`instruction_column`, `response_column`) to match your dataset structure.
 
 ### Model Configuration
 
@@ -254,10 +259,11 @@ python scripts/infer.py \
 
 ## 📊 Evaluation Metrics
 
-The evaluation script reports:
+The evaluation script reports on the crisis companion's performance:
 
 - **Valid JSON**: Percentage of responses with valid JSON structure
 - **Valid Structure**: Percentage with correct crisis-response structure
+- **Crisis Response Quality**: Validation of action, priority, reasoning, and resources
 - **Safety Alignment**: Basic safety checks on responses
 - **Error Logging**: Detailed logs of invalid responses
 
@@ -332,10 +338,13 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing documentation, 
 - [CHANGELOG.md](CHANGELOG.md) - Version history and changes
 - [docs/hardware-setup.md](docs/hardware-setup.md) - Detailed hardware configuration and optimization
 - [docs/dataset-setup.md](docs/dataset-setup.md) - Complete guide for configuring Hugging Face datasets
+- [docs/dataset-info.md](docs/dataset-info.md) - Information about the crisis-response-training dataset
 - [docs/environment-variables.md](docs/environment-variables.md) - Environment variables configuration
 - [docs/model-naming.md](docs/model-naming.md) - Guide for controlling output model names
 - [docs/testing.md](docs/testing.md) - Comprehensive testing documentation
 - [tests/README.md](tests/README.md) - Test suite structure and quick reference
+- [GitHub Repository](https://github.com/ianktoo/crisis_agent_finetune) - Source code and issues
+- [Dataset Repository](https://huggingface.co/datasets/ianktoo/crisis-response-training) - Training dataset
 - [Unsloth Documentation](https://github.com/unslothai/unsloth)
 - [Hugging Face Datasets](https://huggingface.co/docs/datasets/)
 - [LoRA Paper](https://arxiv.org/abs/2106.09685)
@@ -344,10 +353,16 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing documentation, 
 
 This is a complete pipeline ready for use. Feel free to customize:
 
-- Add custom evaluation metrics
-- Implement additional safety checks
+- Add custom evaluation metrics for crisis response quality
+- Implement additional safety checks for emergency scenarios
 - Add experiment tracking (Weights & Biases, MLflow)
 - Extend to other base models
+- Improve crisis scenario handling and response structure
+
+## 🔗 Links
+
+- **GitHub Repository**: [ianktoo/crisis_agent_finetune](https://github.com/ianktoo/crisis_agent_finetune)
+- **Training Dataset**: [ianktoo/crisis-response-training](https://huggingface.co/datasets/ianktoo/crisis-response-training)
 
 ## 📄 License
 
@@ -359,23 +374,61 @@ If you use this software in your research, publications, or projects, please inc
 
 For academic publications, please cite:
 
+**Pipeline:**
 ```bibtex
 @software{crisis_agent_finetune,
   title = {Crisis-Agent Fine-Tuning Pipeline},
-  author = {Your Name},
+  author = {ianktoo},
   year = {2026},
-  url = {https://github.com/yourusername/crisis_agent_finetune},
-  note = {A complete end-to-end pipeline for fine-tuning Mistral-7B as a crisis-response agent}
+  url = {https://github.com/ianktoo/crisis_agent_finetune},
+  note = {A complete end-to-end pipeline for fine-tuning Mistral-7B as a crisis companion application using crisis scenario datasets}
+}
+```
+
+**Dataset:**
+```bibtex
+@dataset{crisis_response_training_2026,
+  title = {Crisis Response Training Dataset},
+  author = {Ian K. T.},
+  year = {2026},
+  url = {https://huggingface.co/datasets/ianktoo/crisis-response-training},
+  note = {Synthetic dataset for training crisis response language models}
 }
 ```
 
 ## 🎯 Next Steps
 
-1. **Configure your dataset** in `configs/dataset_config.yaml`
-2. **Adjust hyperparameters** based on your GPU memory
-3. **Run training** with `python scripts/train.py`
-4. **Evaluate** your model
-5. **Deploy** using the merged model or LoRA checkpoint
+1. **Verify dataset configuration** in `configs/dataset_config.yaml` (default: `ianktoo/crisis-response-training`)
+2. **Check column names** match your dataset structure (`instruction_column`, `response_column`)
+3. **Adjust hyperparameters** based on your GPU memory
+4. **Run training** with `python scripts/train.py`
+5. **Evaluate** your crisis companion model
+6. **Deploy** using the merged model or LoRA checkpoint
+
+## 📦 Dataset
+
+This pipeline is configured to use the **Crisis Response Training Dataset**:
+
+- **Hugging Face**: [ianktoo/crisis-response-training](https://huggingface.co/datasets/ianktoo/crisis-response-training)
+- **Purpose**: Training data for crisis companion application
+- **Format**: Instruction-response pairs for crisis scenarios
+- **Type**: Synthetic dataset for training crisis response language models
+
+### Dataset Citation
+
+If you use this dataset in your research, please cite:
+
+```bibtex
+@dataset{crisis_response_training_2026,
+  title = {Crisis Response Training Dataset},
+  author = {Ian K. T.},
+  year = {2026},
+  url = {https://huggingface.co/datasets/ianktoo/crisis-response-training},
+  note = {Synthetic dataset for training crisis response language models}
+}
+```
+
+Update `configs/dataset_config.yaml` if you need to use a different dataset or adjust column mappings.
 
 ---
 
