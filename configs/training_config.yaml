@@ -32,7 +32,7 @@ training:
   
   # Evaluation
   eval_steps: 500
-  evaluation_strategy: "steps"
+  eval_strategy: "steps"
   
   # Logging
   logging_steps: 10

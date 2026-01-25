@@ -88,7 +88,7 @@ def create_trainer(
         
         # Evaluation
         eval_steps=training_config.get("eval_steps", 500) if eval_dataset else None,
-        evaluation_strategy=training_config.get("evaluation_strategy", "steps") if eval_dataset else "no",
+        eval_strategy=training_config.get("eval_strategy", "steps") if eval_dataset else "no",
         
         # Logging
         logging_steps=training_config.get("logging_steps", 10),
@@ -108,6 +108,13 @@ def create_trainer(
         gradient_checkpointing=True,
     )
     
+    # Use DataCollatorForLanguageModeling for causal LM
+    from transformers import DataCollatorForLanguageModeling
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer,
+        mlm=False,  # Causal LM, not masked LM
+    )
+    
     # Create trainer
     trainer = Trainer(
         model=model,
@@ -115,6 +122,7 @@ def create_trainer(
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         args=training_args,
+        data_collator=data_collator,
     )
     
     logger.info("Trainer created successfully")

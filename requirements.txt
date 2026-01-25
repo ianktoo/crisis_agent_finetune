@@ -6,8 +6,12 @@ accelerate
 bitsandbytes
 flash-attn
 pyyaml
+huggingface_hub>=0.20.0
 
 # Testing dependencies
 pytest>=7.4.0
 pytest-cov>=4.1.0
 pytest-mock>=3.11.1
+
+# Progress bars
+tqdm>=4.65.0

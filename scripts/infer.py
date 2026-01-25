@@ -7,6 +7,7 @@ Usage: python scripts/infer.py [--checkpoint CHECKPOINT_PATH] [--prompt PROMPT]
 import sys
 import argparse
 import json
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,17 @@ from src.utils.logging import setup_logging, get_logger
 from src.utils.error_handling import handle_errors, check_cuda_available
 from src.utils.json_validator import validate_json_structure, extract_json_from_text
 from unsloth import FastLanguageModel
+
+
+def _get_generation_context(model: Any):
+    """
+    Get context manager for model generation.
+    Uses no_speak() if available, otherwise returns nullcontext.
+    """
+    if hasattr(model, 'no_speak'):
+        return model.no_speak()
+    else:
+        return nullcontext()
 
 
 def main():
@@ -193,7 +205,7 @@ def _generate_response(
     inputs = tokenizer(full_prompt, return_tensors="pt").to(model.device)
     
     # Generate
-    with model.no_speak():
+    with _get_generation_context(model):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,

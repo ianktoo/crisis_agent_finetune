@@ -26,8 +26,8 @@ dataset:
   eval_split: "validation"  # or "test" if no validation split
   
   # Dataset columns (adjust based on your dataset structure)
-  instruction_column: "instruction"  # Column name for instructions/prompts
-  response_column: "response"  # Column name for responses
+  instruction_column: "Input"  # Column name for instructions/prompts (scenario)
+  response_column: "Output"  # Column name for responses (structured response)
   
   # Data processing
   max_samples: -1  # -1 means use all samples, otherwise limit to this number
@@ -44,5 +44,5 @@ dataset:
     {response}</s>
   
   # JSON validation
-  validate_json: true
+  validate_json: false  # Disabled - responses are structured text, not JSON
   strict_json: false  # If true, reject records with invalid JSON

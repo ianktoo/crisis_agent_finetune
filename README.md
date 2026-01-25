@@ -4,9 +4,9 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
 [![GitHub](https://img.shields.io/badge/GitHub-ianktoo%2Fcrisis__agent__finetune-blue)](https://github.com/ianktoo/crisis_agent_finetune)
 
-A complete end-to-end pipeline for fine-tuning Mistral-7B as a **crisis companion application** using crisis scenario datasets, Unsloth, LoRA, and Hugging Face.
+A complete end-to-end pipeline for fine-tuning Mistral-7B as an **AI Emergency Kit** - your intelligent crisis response assistant that provides structured, actionable guidance during emergencies.
 
-> **Purpose**: This pipeline fine-tunes Mistral-7B to serve as a crisis companion that can provide structured, actionable responses to crisis scenarios. The model is trained on crisis-response datasets to assist in emergency situations.
+> **Purpose**: This pipeline fine-tunes Mistral-7B to serve as an **AI Emergency Kit** - a reliable AI companion that can provide structured, actionable responses to crisis scenarios. The model is trained on crisis-response datasets to assist in emergency situations, making it your go-to AI tool when you need immediate, structured guidance.
 
 > **Note**: Please see [LICENSE](LICENSE) for attribution requirements if you use this software.
 
@@ -351,6 +351,8 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing documentation, 
 
 ## 📚 Additional Resources
 
+- [PIPELINE.md](PIPELINE.md) - Complete pipeline checklist with progress tracking
+- [MODEL_BRANDING.md](MODEL_BRANDING.md) - AI Emergency Kit branding guide and guidelines
 - [LICENSE](LICENSE) - MIT License with attribution requirements
 - [CHANGELOG.md](CHANGELOG.md) - Version history and changes
 - [docs/hardware-setup.md](docs/hardware-setup.md) - Detailed hardware configuration and optimization
@@ -419,10 +421,14 @@ For academic publications, please cite:
 2. **Check column names** match your dataset structure (`instruction_column`, `response_column`)
 3. **Adjust hyperparameters** based on your GPU memory
 4. **Run training** with `python scripts/train.py`
-5. **Evaluate** your crisis companion model
+5. **Evaluate** your AI Emergency Kit model
 6. **Deploy** using the merged model or LoRA checkpoint
 
-> **🚀 Ready to deploy?** See [DEPLOYMENT.md](DEPLOYMENT.md) for a complete deployment checklist and quick start guide.
+> **🚀 Ready to deploy?** 
+> - See [PIPELINE.md](PIPELINE.md) for complete pipeline checklist with progress tracking
+> - See [DEPLOYMENT.md](DEPLOYMENT.md) for pre-training deployment checklist
+> - See [QUICK_GUIDE.md](QUICK_GUIDE.md) for a simple 4-step post-training guide
+> - See [POST_TRAINING.md](POST_TRAINING.md) for detailed post-training steps and Hugging Face deployment
 
 ## 📦 Dataset
 

@@ -79,3 +79,14 @@ test-unit:
 test-integration:
 	@echo "Running integration tests..."
 	pytest tests/integration/ -v
+
+# Upload model to Hugging Face
+upload-hf:
+	@echo "Uploading model to Hugging Face..."
+	@echo "Usage: make upload-hf CHECKPOINT=path REPO=username/repo-name"
+	@if [ -z "$(CHECKPOINT)" ] || [ -z "$(REPO)" ]; then \
+		echo "Error: CHECKPOINT and REPO required"; \
+		echo "Example: make upload-hf CHECKPOINT=outputs/final_model REPO=username/crisis-agent-v1"; \
+		exit 1; \
+	fi
+	python scripts/upload_to_hf.py --checkpoint $(CHECKPOINT) --repo-name $(REPO)

@@ -189,21 +189,28 @@ def tokenize_dataset(
     logger.info(f"Tokenizing dataset with max_length={max_length}")
     
     def tokenize_function(examples):
-        return tokenizer(
-            examples[text_column],
+        # When batched=True, examples[text_column] is a list of strings
+        texts = examples[text_column] if isinstance(examples[text_column], list) else [examples[text_column]]
+        tokenized = tokenizer(
+            texts,
             truncation=True,
             max_length=max_length,
             padding=False,
             return_overflowing_tokens=False
         )
+        # Don't add labels here - DataCollatorForLanguageModeling will handle it
+        return tokenized
     
     tokenized_dataset = {}
     for split_name, split_data in dataset.items():
         logger.info(f"Tokenizing {split_name} split...")
+        # Remove all columns except text_column before tokenizing
+        # After tokenization, the tokenizer will add input_ids, attention_mask, etc.
+        columns_to_remove = [col for col in split_data.column_names if col != text_column]
         tokenized_dataset[split_name] = split_data.map(
             tokenize_function,
             batched=True,
-            remove_columns=[col for col in split_data.column_names if col != text_column],
+            remove_columns=columns_to_remove + [text_column],  # Remove text_column after tokenization
             desc=f"Tokenizing {split_name}"
         )
     

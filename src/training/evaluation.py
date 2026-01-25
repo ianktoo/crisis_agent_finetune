@@ -5,14 +5,27 @@ Evaluates model on JSON structure, role-adaptation, and crisis-reasoning quality
 
 import json
 import yaml
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from datasets import Dataset
+from tqdm import tqdm
 from src.utils.logging import get_logger
 from src.utils.error_handling import EvaluationError, handle_errors, validate_path
 from src.utils.json_validator import validate_json_structure, validate_crisis_response
 
 logger = get_logger(__name__)
+
+
+def _get_generation_context(model: Any):
+    """
+    Get context manager for model generation.
+    Uses no_speak() if available, otherwise returns nullcontext.
+    """
+    if hasattr(model, 'no_speak'):
+        return model.no_speak()
+    else:
+        return nullcontext()
 
 
 @handle_errors(error_type=EvaluationError)
@@ -38,10 +51,11 @@ def evaluate_model(
     Returns:
         Dictionary with evaluation metrics
     """
-    logger.info(f"Evaluating model on {min(len(eval_dataset), max_samples)} samples...")
+    total_samples = min(len(eval_dataset), max_samples)
+    logger.info(f"Evaluating model on {total_samples} samples...")
     
     # Limit samples
-    eval_samples = eval_dataset.select(range(min(len(eval_dataset), max_samples)))
+    eval_samples = eval_dataset.select(range(total_samples))
     
     metrics = {
         "total_samples": len(eval_samples),
@@ -53,8 +67,18 @@ def evaluate_model(
         "warnings": [],
     }
     
+    # Create progress bar
+    progress_bar = tqdm(
+        enumerate(eval_samples),
+        total=len(eval_samples),
+        desc="Evaluating",
+        unit="sample",
+        ncols=100,
+        bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]'
+    )
+    
     # Evaluate each sample
-    for idx, sample in enumerate(eval_samples):
+    for idx, sample in progress_bar:
         try:
             # Extract instruction
             instruction = sample.get("instruction", "")
@@ -70,7 +94,7 @@ def evaluate_model(
             prompt = f"<s>[INST] {instruction} [/INST]"
             inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
             
-            with model.no_speak():
+            with _get_generation_context(model):
                 outputs = model.generate(
                     **inputs,
                     max_new_tokens=max_new_tokens,
@@ -116,8 +140,16 @@ def evaluate_model(
                     "response_preview": response[:200]
                 })
             
+            # Update progress bar with metrics
+            valid_pct = (metrics["valid_json"] / (idx + 1)) * 100
+            progress_bar.set_postfix({
+                'Valid JSON': f'{metrics["valid_json"]}/{idx + 1} ({valid_pct:.1f}%)',
+                'Errors': len(metrics["errors"])
+            })
+            
+            # Log every 10 samples for detailed tracking
             if (idx + 1) % 10 == 0:
-                logger.info(f"Evaluated {idx + 1}/{len(eval_samples)} samples...")
+                logger.info(f"Evaluated {idx + 1}/{len(eval_samples)} samples - Valid JSON: {metrics['valid_json']} ({valid_pct:.1f}%)")
                 
         except Exception as e:
             logger.error(f"Error evaluating sample {idx}: {str(e)}")
@@ -125,6 +157,15 @@ def evaluate_model(
                 "sample_idx": idx,
                 "error": f"Evaluation error: {str(e)}"
             })
+            # Update progress bar even on error
+            valid_pct = (metrics["valid_json"] / (idx + 1)) * 100 if (idx + 1) > 0 else 0
+            progress_bar.set_postfix({
+                'Valid JSON': f'{metrics["valid_json"]}/{idx + 1}',
+                'Errors': len(metrics["errors"])
+            })
+    
+    # Close progress bar
+    progress_bar.close()
     
     # Calculate percentages
     metrics["valid_json_percent"] = (metrics["valid_json"] / metrics["total_samples"]) * 100
@@ -199,7 +240,7 @@ def evaluate_safety_alignment(
             full_prompt = f"<s>[INST] {prompt} [/INST]"
             inputs = tokenizer(full_prompt, return_tensors="pt").to(model.device)
             
-            with model.no_speak():
+            with _get_generation_context(model):
                 outputs = model.generate(
                     **inputs,
                     max_new_tokens=max_new_tokens,
