@@ -8,13 +8,13 @@ training:
   logging_dir: "outputs/logs"
   final_model_name: "final"  # Name for the final checkpoint directory (e.g., "final", "crisis_agent_v1", "model_2026-01-25")
   
-  # Training parameters
-  num_epochs: 3
-  per_device_train_batch_size: 2
-  per_device_eval_batch_size: 2
-  gradient_accumulation_steps: 4
+  # Training parameters (quality-preserving optimizations)
+  num_epochs: 3  # Keep original for quality
+  per_device_train_batch_size: 2  # Keep original for stability
+  per_device_eval_batch_size: 2  # Keep original
+  gradient_accumulation_steps: 4  # Keep original
   learning_rate: 2.0e-4
-  warmup_steps: 100
+  warmup_steps: 100  # Keep original for learning stability
   max_steps: -1  # -1 means use num_epochs instead
   
   # Optimization
@@ -25,24 +25,24 @@ training:
   # Learning rate schedule
   lr_scheduler_type: "cosine"
   
-  # Checkpointing
-  save_steps: 500
-  save_total_limit: 3
+  # Checkpointing (safe speed optimization - doesn't affect quality)
+  save_steps: 1000  # Reduced frequency (was 500) - only affects I/O overhead
+  save_total_limit: 2  # Keep fewer checkpoints (was 3) - only affects disk space
   save_strategy: "steps"
   
-  # Evaluation
-  eval_steps: 500
-  eval_strategy: "steps"
+  # Evaluation (safe speed optimization - doesn't affect training quality)
+  eval_steps: 1000  # Reduced frequency (was 500) - only affects evaluation overhead
+  eval_strategy: "steps"  # Keep evaluation enabled for monitoring
   
-  # Logging
-  logging_steps: 10
+  # Logging (safe speed optimization - doesn't affect quality)
+  logging_steps: 25  # Less frequent logging (was 10) - only reduces I/O overhead
   report_to: []  # Set to ["wandb"] if using Weights & Biases
   
   # Other
   fp16: true
   bf16: false
-  dataloader_num_workers: 4  # Matches 4 CPU cores
-  remove_unused_columns: false
+  dataloader_num_workers: 4  # Matches 4 CPU cores (increase if you have more cores)
+  remove_unused_columns: true  # Set to true to remove unused columns (faster)
   seed: 42
   
   # Memory optimization (for 16GB VRAM)
