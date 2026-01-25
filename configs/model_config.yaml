@@ -1,0 +1,36 @@
+# Model configuration for Mistral-7B with LoRA
+# Optimized for: 16GB VRAM GPU (Jupyter 16G Pytorch server)
+# Hardware: 1x GPU (16GB), 4x CPU, 32GB RAM, 100GB storage
+
+model:
+  # Base model
+  model_name: "unsloth/Mistral-7B-Instruct-v0.2"
+  # Alternative: "mistralai/Mistral-7B-Instruct-v0.2"
+  
+  # Quantization (4-bit for memory efficiency)
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: "float16"
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true
+  
+  # LoRA configuration
+  lora:
+    r: 16  # LoRA rank (higher = more parameters, more memory)
+    lora_alpha: 32  # LoRA alpha (typically 2x r)
+    target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    lora_dropout: 0.05
+    bias: "none"
+    task_type: "CAUSAL_LM"
+  
+  # Flash attention (faster training)
+  use_flash_attention_2: true
+  
+  # Other settings
+  max_seq_length: 2048  # Maximum sequence length (reduce to 1024 if OOM)
+  trust_remote_code: false
+  
+  # Memory notes for 16GB VRAM:
+  # - 4-bit quantization: ~4-5GB for model
+  # - LoRA adapters: ~200-300MB
+  # - Training overhead: ~8-10GB (batch size 2, seq_len 2048)
+  # - Total usage: ~12-15GB (safe for 16GB VRAM)

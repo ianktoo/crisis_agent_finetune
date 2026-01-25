@@ -1,0 +1,47 @@
+# Dataset configuration for crisis-agent fine-tuning
+# Configure your Hugging Face dataset here
+
+dataset:
+  # Hugging Face dataset identifier
+  # Examples:
+  #   - Public dataset: "username/dataset_name" or "dataset_name"
+  #   - Private dataset: "username/private_dataset" (requires HF token)
+  #   - With revision: "username/dataset_name:main" or "username/dataset_name:v1.0"
+  hf_dataset_name: "your_username/crisis_dataset"  # UPDATE THIS - Your Hugging Face dataset name
+  
+  # Optional: Hugging Face token for private datasets
+  # Set via environment variable: export HF_TOKEN="your_token_here"
+  # Or uncomment and set below (not recommended for security)
+  # hf_token: null
+  
+  # Optional: Dataset configuration name (for datasets with multiple configs)
+  # dataset_config_name: null
+  
+  # Optional: Dataset revision/version
+  # revision: "main"
+  
+  # Dataset split
+  train_split: "train"
+  eval_split: "validation"  # or "test" if no validation split
+  
+  # Dataset columns (adjust based on your dataset structure)
+  instruction_column: "instruction"  # Column name for instructions/prompts
+  response_column: "response"  # Column name for responses
+  
+  # Data processing
+  max_samples: -1  # -1 means use all samples, otherwise limit to this number
+  shuffle: true
+  shuffle_seed: 42
+  
+  # Caching
+  cache_dir: "data/local_cache"
+  use_cache: true
+  
+  # Prompt template (adjust based on your needs)
+  prompt_template: |
+    <s>[INST] {instruction} [/INST]
+    {response}</s>
+  
+  # JSON validation
+  validate_json: true
+  strict_json: false  # If true, reject records with invalid JSON
