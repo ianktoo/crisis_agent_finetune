@@ -35,6 +35,11 @@ def main():
         default=None,
         help="Output directory for checkpoints (default: from config)"
     )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Skip existing checkpoints and start training from scratch"
+    )
     
     args = parser.parse_args()
     
@@ -93,28 +98,32 @@ def main():
         logger.info("\n[PHASE 7] Starting training...")
         
         # Check for existing checkpoints to resume from
-        output_dir = Path(trainer.args.output_dir)
         checkpoint_to_resume = None
         
-        # Look for checkpoints in output directory
-        if output_dir.exists():
-            # Find all checkpoint directories (checkpoint-*)
-            checkpoint_dirs = sorted(
-                [d for d in output_dir.iterdir() if d.is_dir() and d.name.startswith("checkpoint-")],
-                key=lambda x: int(x.name.split("-")[1]) if len(x.name.split("-")) > 1 and x.name.split("-")[1].isdigit() else 0,
-                reverse=True
-            )
+        if args.no_resume:
+            logger.info("--no-resume flag set: Starting training from scratch (skipping existing checkpoints)")
+        else:
+            output_dir = Path(trainer.args.output_dir)
             
-            if checkpoint_dirs:
-                checkpoint_to_resume = checkpoint_dirs[0]
-                logger.info(f"Found existing checkpoint: {checkpoint_to_resume.name}")
-                logger.info(f"Resuming training from: {checkpoint_to_resume}")
-            else:
-                # Check for "interrupted" checkpoint
-                interrupted_checkpoint = output_dir / "interrupted"
-                if interrupted_checkpoint.exists():
-                    checkpoint_to_resume = interrupted_checkpoint
-                    logger.info(f"Found interrupted checkpoint, resuming from: {checkpoint_to_resume}")
+            # Look for checkpoints in output directory
+            if output_dir.exists():
+                # Find all checkpoint directories (checkpoint-*)
+                checkpoint_dirs = sorted(
+                    [d for d in output_dir.iterdir() if d.is_dir() and d.name.startswith("checkpoint-")],
+                    key=lambda x: int(x.name.split("-")[1]) if len(x.name.split("-")) > 1 and x.name.split("-")[1].isdigit() else 0,
+                    reverse=True
+                )
+                
+                if checkpoint_dirs:
+                    checkpoint_to_resume = checkpoint_dirs[0]
+                    logger.info(f"Found existing checkpoint: {checkpoint_to_resume.name}")
+                    logger.info(f"Resuming training from: {checkpoint_to_resume}")
+                else:
+                    # Check for "interrupted" checkpoint
+                    interrupted_checkpoint = output_dir / "interrupted"
+                    if interrupted_checkpoint.exists():
+                        checkpoint_to_resume = interrupted_checkpoint
+                        logger.info(f"Found interrupted checkpoint, resuming from: {checkpoint_to_resume}")
         
         final_checkpoint = train_model(trainer, resume_from_checkpoint=checkpoint_to_resume)
         

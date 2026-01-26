@@ -9,8 +9,8 @@ dataset:
   #   - Private dataset: "username/private_dataset" (requires HF token)
   #   - With revision: "username/dataset_name:main" or "username/dataset_name:v1.0"
   #   - Local JSONL file: "data/crisis_response_json.jsonl" (relative to project root)
-  # hf_dataset_name: "ianktoo/crisis-response-training"  # Original text dataset
-  hf_dataset_name: "data/crisis_response_json.jsonl"  # Converted JSON dataset
+  hf_dataset_name: "ianktoo/crisis-response-training"  # Hugging Face dataset with train/validation/test splits
+  # hf_dataset_name: "data/crisis_response_json.jsonl"  # Local JSON dataset (alternative)
   
   # Optional: Hugging Face token for private datasets
   # Set via environment variable: export HF_TOKEN="your_token_here"
@@ -25,15 +25,15 @@ dataset:
   
   # Dataset split
   train_split: "train"
-  eval_split: "validation"  # or "test" if no validation split
+  eval_split: "validation"  # Use "validation" for evaluation, "test" is also available
   
   # Dataset columns (adjust based on your dataset structure)
-  # For original dataset: "Input" and "Output"
-  # For converted JSON dataset: "instruction" and "response"
-  # instruction_column: "Input"  # For original text dataset
-  # response_column: "Output"  # For original text dataset
-  instruction_column: "instruction"  # For JSON dataset
-  response_column: "response"  # For JSON dataset
+  # Hugging Face dataset uses: "Input" and "Output"
+  # Local JSON dataset uses: "instruction" and "response"
+  instruction_column: "Input"  # For Hugging Face dataset (contains the scenario)
+  response_column: "Output"  # For Hugging Face dataset (contains structured text response)
+  # instruction_column: "instruction"  # For local JSON dataset
+  # response_column: "response"  # For local JSON dataset
   
   # Data processing
   max_samples: -1  # -1 means use all samples, otherwise limit to this number
@@ -45,11 +45,20 @@ dataset:
   use_cache: true
   
   # Prompt template (adjust based on your needs)
+  # For Hugging Face dataset: Uses structured text format (FACTS, UNCERTAINTIES, etc.)
+  # For JSON dataset: Uncomment the JSON format instruction below
   prompt_template: |
     <s>[INST] {instruction} [/INST]
     {response}</s>
   
+  # Alternative template with JSON format instruction (use if training on JSON dataset):
+  # prompt_template: |
+  #   <s>[INST] {instruction}
+  #   
+  #   IMPORTANT: Respond with valid JSON format only. Use this structure: {{"facts": [...], "uncertainties": [...], "analysis": [...], "guidance": [...], "confidence": 0.0-1.0}} [/INST]
+  #   {response}</s>
+  
   # JSON validation
-  # validate_json: false  # Disabled for text responses
-  validate_json: true  # Enabled for JSON dataset
+  validate_json: false  # Disabled for structured text responses from Hugging Face dataset
+  # validate_json: true  # Enable only if using JSON dataset
   strict_json: false  # If true, reject records with invalid JSON

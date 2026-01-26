@@ -4,10 +4,135 @@ Validates JSON structure and content quality.
 """
 
 import json
+import re
 from typing import Dict, Any, List, Optional, Tuple
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def clean_json_text(text: str) -> str:
+    """
+    Clean and fix common JSON formatting errors in model-generated text.
+    
+    Common errors fixed:
+    - Spaces before closing quotes in keys: "facts "] -> "facts"
+    - Wrong bracket placement: "facts "]: [ -> "facts": [
+    - Extra spaces in keys
+    - Missing colons after keys
+    - Malformed array items with extra quotes
+    
+    Args:
+        text: Text containing potentially malformed JSON
+        
+    Returns:
+        Cleaned text with common JSON errors fixed
+    """
+    if not text or not text.strip():
+        return text
+    
+    # Remove leading/trailing whitespace
+    text = text.strip()
+    
+    # Remove markdown code blocks if present
+    text = re.sub(r'^```json\s*', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^```\s*', '', text, flags=re.MULTILINE)
+    text = re.sub(r'```\s*$', '', text, flags=re.MULTILINE)
+    
+    # Fix: "key "]: [ -> "key": [ (most common error pattern)
+    text = re.sub(r'"(\w+)\s+"\]:\s*\[', r'"\1": [', text)
+    
+    # Fix: "key "]: " -> "key": "
+    text = re.sub(r'"(\w+)\s+"\]:\s*"', r'"\1": "', text)
+    
+    # Fix: "key "]: number -> "key": number
+    text = re.sub(r'"(\w+)\s+"\]:\s*(\d+\.?\d*)', r'"\1": \2', text)
+    
+    # Fix: "key "]: word -> "key": "word"
+    text = re.sub(r'"(\w+)\s+"\]:\s*(\w+)', r'"\1": "\2"', text)
+    
+    # Fix: "key "]: -> "key":
+    text = re.sub(r'"(\w+)\s+"\]:', r'"\1":', text)
+    
+    # Fix spaces before closing quotes in keys: "facts " -> "facts"
+    text = re.sub(r'"(\w+)\s+"\s*:', r'"\1":', text)
+    
+    # Fix missing colons: "key" [ -> "key": [
+    text = re.sub(r'"(\w+)"\s+\[', r'"\1": [', text)
+    text = re.sub(r'"(\w+)"\s+"', r'"\1": "', text)
+    
+    # Fix malformed array items that have "]: [ after them
+    # Pattern: "text " "]: [ -> "text",
+    # This handles cases like: "Gas leak occurred... " " "]: [
+    text = re.sub(r'"([^"]+?)\s+"\s+"\s*"\]:\s*\[', r'"\1",', text)
+    text = re.sub(r'"([^"]+?)\s+"\s*"\]:\s*\[', r'"\1",', text)
+    
+    # Fix: "text "]: [ -> "text", (when it's clearly an array item, not a key)
+    # This happens when model generates malformed nested structures
+    # Only apply if it's inside an array context (after a comma or opening bracket)
+    text = re.sub(r',\s*"([^"]+?)\s+"\]:\s*\[', r', "\1",', text)
+    text = re.sub(r'\[\s*"([^"]+?)\s+"\]:\s*\[', r'["\1",', text)
+    
+    # Fix: "text " " -> "text" (merge adjacent quoted strings in arrays)
+    # Handle patterns like: "text " "more text"
+    text = re.sub(r'"([^"]+?)\s+"\s+"([^"]+)"', r'"\1 \2"', text)
+    
+    # Fix trailing spaces in string values (multiple spaces before closing quote)
+    text = re.sub(r'":\s*"([^"]*?)\s{2,}"', r'": "\1"', text)
+    
+    # Fix single trailing space in string values (common error)
+    # But only if it's followed by a comma, bracket, or end of line
+    text = re.sub(r'":\s*"([^"]+?)\s+"([,\]\}])', r'": "\1"\2', text)
+    
+    # Remove comments (JSON doesn't support comments)
+    text = re.sub(r'//.*?$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+    
+    # Ensure JSON starts with { if it doesn't already
+    # But only if it looks like it should be an object (starts with a key)
+    if not text.strip().startswith('{') and text.strip().startswith('"'):
+        # Check if it looks like JSON object content
+        if '":' in text or '"]:' in text:
+            text = '{' + text
+    
+    # Ensure JSON ends with } if it doesn't already and looks incomplete
+    if not text.strip().endswith('}') and text.strip().endswith(']'):
+        # Count braces to see if we need closing brace
+        open_braces = text.count('{')
+        close_braces = text.count('}')
+        if open_braces > close_braces:
+            text = text + '}'
+    
+    return text.strip()
+
+
+def extract_and_clean_json(text: str) -> Optional[str]:
+    """
+    Extract JSON from text and clean common formatting errors.
+    
+    Args:
+        text: Text that may contain JSON
+        
+    Returns:
+        Cleaned JSON string, or None if no JSON found
+    """
+    if not text:
+        return None
+    
+    # First, try to find JSON object boundaries
+    start_idx = text.find('{')
+    end_idx = text.rfind('}')
+    
+    if start_idx == -1 or end_idx == -1 or end_idx <= start_idx:
+        return None
+    
+    # Extract JSON portion
+    json_str = text[start_idx:end_idx + 1]
+    
+    # Clean the JSON
+    json_str = clean_json_text(json_str)
+    
+    return json_str
 
 
 def validate_json_structure(
@@ -44,14 +169,29 @@ def validate_json_structure(
         if strict:
             return False, None, f"Invalid JSON: {str(e)}"
         
-        # Try to extract JSON from text
+        # Try to clean and extract JSON from text
         try:
-            # Look for JSON-like structures
-            start_idx = text.find('{')
-            end_idx = text.rfind('}')
+            # Clean the text first
+            cleaned_text = clean_json_text(text)
             
-            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-                json_str = text[start_idx:end_idx + 1]
+            # Try parsing cleaned text
+            try:
+                parsed = json.loads(cleaned_text)
+                if not isinstance(parsed, dict):
+                    return False, None, "JSON is not a dictionary/object"
+                
+                if required_keys:
+                    missing_keys = [key for key in required_keys if key not in parsed]
+                    if missing_keys:
+                        return False, parsed, f"Missing required keys: {missing_keys}"
+                
+                return True, parsed, None
+            except json.JSONDecodeError:
+                pass
+            
+            # If direct parsing failed, try to extract JSON object
+            json_str = extract_and_clean_json(text)
+            if json_str:
                 parsed = json.loads(json_str)
                 
                 if not isinstance(parsed, dict):
@@ -63,7 +203,8 @@ def validate_json_structure(
                         return False, parsed, f"Missing required keys: {missing_keys}"
                 
                 return True, parsed, None
-        except Exception:
+        except Exception as extract_error:
+            logger.debug(f"JSON extraction/cleaning failed: {str(extract_error)}")
             pass
         
         return False, None, f"Could not parse JSON: {str(e)}"
@@ -114,6 +255,7 @@ def validate_crisis_response(
 def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
     """
     Extract JSON object from text that may contain other content.
+    Uses cleaning utilities to fix common JSON errors.
     
     Args:
         text: Text that may contain JSON
@@ -121,6 +263,20 @@ def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
     Returns:
         Parsed JSON dictionary, or None if not found
     """
+    if not text:
+        return None
+    
+    # Try to extract and clean JSON
+    json_str = extract_and_clean_json(text)
+    if json_str:
+        try:
+            parsed = json.loads(json_str)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+    
+    # Fallback to validation method (which also does cleaning)
     is_valid, parsed, _ = validate_json_structure(text, strict=False)
     
     if is_valid and parsed:

@@ -4,8 +4,9 @@
 
 model:
   # Base model
+  # Using Unsloth version for faster training (no quality difference)
   model_name: "unsloth/Mistral-7B-Instruct-v0.2"
-  # Alternative: "mistralai/Mistral-7B-Instruct-v0.2"
+  # Alternative (base model): "mistralai/Mistral-7B-Instruct-v0.2"
   
   # Quantization (4-bit for memory efficiency)
   load_in_4bit: true

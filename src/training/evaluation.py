@@ -79,16 +79,25 @@ def evaluate_model(
     }
     
     # Prepare all prompts first
+    # Match the training format: use Input column (scenario) as instruction
     prompts = []
     for sample in eval_samples:
-        instruction = sample.get("instruction", "")
+        # Try different column names to find the instruction/scenario
+        instruction = (
+            sample.get("Input", "") or  # Hugging Face dataset format
+            sample.get("instruction", "") or  # Alternative format
+            sample.get("input", "")
+        )
+        
         if not instruction:
-            # Try to extract from text
+            # Fallback: try to extract from text field
             text = sample.get("text", "")
             if "[INST]" in text:
                 instruction = text.split("[INST]")[1].split("[/INST]")[0].strip()
             else:
                 instruction = text.split("\n")[0] if "\n" in text else text
+        
+        # Format prompt to match training format (no JSON instruction for structured text)
         prompts.append(f"<s>[INST] {instruction} [/INST]")
     
     # Use faster generation settings if enabled
@@ -132,6 +141,7 @@ def evaluate_model(
                         temperature=gen_temperature,
                         do_sample=gen_do_sample,
                         pad_token_id=tokenizer.eos_token_id,
+                        eos_token_id=tokenizer.eos_token_id if hasattr(tokenizer, "eos_token_id") else None,
                     )
                 
                 # Decode and process each response in batch
@@ -152,7 +162,10 @@ def evaluate_model(
                             else:
                                 response = generated_text.strip()
                         
-                        # Validate JSON
+                        # Remove any trailing </s> tokens or extra whitespace
+                        response = response.replace("</s>", "").strip()
+                        
+                        # First try to validate as JSON (in case model generates JSON)
                         is_valid_json, parsed_json, json_error = validate_json_structure(
                             response,
                             strict=False
@@ -173,12 +186,30 @@ def evaluate_model(
                                     "warnings": warnings
                                 })
                         else:
-                            metrics["invalid_json"] += 1
-                            metrics["errors"].append({
-                                "sample_idx": idx,
-                                "error": json_error,
-                                "response_preview": response[:200]
-                            })
+                            # If not JSON, validate as structured text (FACTS, UNCERTAINTIES, etc.)
+                            is_valid_text, text_warnings, text_structure = validate_structured_text_response(
+                                response,
+                                expected_sections=["FACTS", "UNCERTAINTIES", "ANALYSIS", "GUIDANCE"]
+                            )
+                            
+                            if is_valid_text:
+                                metrics["valid_structured_text"] += 1
+                            else:
+                                metrics["invalid_structured_text"] += 1
+                                # Only log JSON errors if it's clearly trying to be JSON
+                                if "{" in response and "}" in response:
+                                    metrics["errors"].append({
+                                        "sample_idx": idx,
+                                        "error": f"Invalid JSON: {json_error}",
+                                        "response_preview": response[:200]
+                                    })
+                                else:
+                                    # It's structured text but invalid
+                                    metrics["warnings"].append({
+                                        "sample_idx": idx,
+                                        "warnings": text_warnings,
+                                        "response_preview": response[:200]
+                                    })
                         
                     except Exception as e:
                         logger.error(f"Error evaluating sample {idx}: {str(e)}")
@@ -199,7 +230,12 @@ def evaluate_model(
                 
                 # Log every 10 samples for detailed tracking
                 if batch_end % 10 == 0 or batch_end == len(eval_samples):
-                    logger.info(f"Evaluated {batch_end}/{len(eval_samples)} samples - Valid JSON: {metrics['valid_json']} ({valid_pct:.1f}%)")
+                    logger.info(
+                        f"Evaluated {batch_end}/{len(eval_samples)} samples - "
+                        f"Valid JSON: {metrics['valid_json']}, "
+                        f"Valid Text: {metrics['valid_structured_text']}, "
+                        f"Total Valid: {total_valid} ({valid_pct:.1f}%)"
+                    )
                     
             except Exception as e:
                 logger.error(f"Error processing batch {batch_start}-{batch_end}: {str(e)}")
