@@ -11,10 +11,14 @@ conda activate crisis_agent
 cd /home/jovyan/work/projects/crisis_agent_finetune
 pip install -r requirements.txt
 
-# 4. Verify setup
+# 4. Set git user (for commits)
+git config --global user.name "ianktoo"
+git config --global user.email "ianktoo@gmail.com"
+
+# 5. Verify setup
 python scripts/verify_setup.py
 
-# 5. Run tests
+# 6. Run tests
 pytest tests/ -v
 
 # Or run tests with coverage

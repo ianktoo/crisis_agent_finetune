@@ -110,9 +110,14 @@ make train
 # Evaluate model
 python scripts/evaluate.py --checkpoint outputs/checkpoints/final
 
+# With AI-based evaluation (Claude) - optional
+python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai
+
 # Or use Makefile
 make evaluate
 ```
+
+> **See [docs/ai-evaluation.md](docs/ai-evaluation.md) for AI-based evaluation guide.**
 
 ### 6. Merge LoRA (Optional)
 

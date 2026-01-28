@@ -17,6 +17,7 @@ from src.data.load_dataset import load_dataset_from_config
 from src.data.format_records import format_dataset
 from src.model.load_model import load_model_from_config, load_tokenizer_only
 from src.training.evaluation import evaluate_model, generate_evaluation_report, evaluate_safety_alignment
+from src.training.ai_evaluation import evaluate_with_ai, add_ai_evaluation_to_metrics
 from unsloth import FastLanguageModel
 
 
@@ -58,6 +59,32 @@ def main():
         type=str,
         default="outputs/evaluation_report.json",
         help="Path to save evaluation report"
+    )
+    parser.add_argument(
+        "--ai",
+        "--ai-eval",
+        action="store_true",
+        dest="use_ai_eval",
+        help="Enable AI-based evaluation (requires API key: ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY)"
+    )
+    parser.add_argument(
+        "--ai-provider",
+        type=str,
+        default="anthropic",
+        choices=["anthropic", "openai", "gemini"],
+        help="AI provider for evaluation: anthropic (default), openai, or gemini"
+    )
+    parser.add_argument(
+        "--ai-model",
+        type=str,
+        default=None,
+        help="Model name (optional, uses provider defaults: claude-3-5-sonnet-20241022, gpt-4o-mini, gemini-1.5-flash)"
+    )
+    parser.add_argument(
+        "--ai-max-samples",
+        type=int,
+        default=None,
+        help="Maximum samples to evaluate with AI (for cost control, default: all samples)"
     )
     
     args = parser.parse_args()
@@ -109,10 +136,43 @@ def main():
             max_samples=args.max_samples,
             batch_size=args.batch_size,
             use_fast_generation=args.fast_generation,
+            collect_for_ai_eval=args.use_ai_eval,  # Collect prompts/responses if AI eval enabled
         )
         
+        # AI-based evaluation (optional)
+        if args.use_ai_eval:
+            provider_name = args.ai_provider.upper()
+            logger.info(f"\n[PHASE 5] Running AI-based evaluation with {provider_name}...")
+            try:
+                # Get collected prompts and responses from metrics
+                prompts = metrics.get("_ai_eval_prompts", [])
+                responses = metrics.get("_ai_eval_responses", [])
+                
+                if prompts and responses:
+                    ai_metrics = evaluate_with_ai(
+                        prompts=prompts,
+                        generated_responses=responses,
+                        provider=args.ai_provider,
+                        model=args.ai_model,
+                        max_samples=args.ai_max_samples,
+                    )
+                    # Merge AI metrics into base metrics
+                    metrics = add_ai_evaluation_to_metrics(metrics, ai_metrics)
+                    # Clean up temporary fields
+                    metrics.pop("_ai_eval_prompts", None)
+                    metrics.pop("_ai_eval_responses", None)
+                else:
+                    logger.warning("No prompts/responses collected for AI evaluation")
+            except Exception as e:
+                logger.error(f"AI evaluation failed: {str(e)}")
+                logger.warning("Continuing with standard evaluation only")
+                metrics["ai_evaluation"] = {
+                    "enabled": True,
+                    "error": str(e)
+                }
+        
         # Generate report
-        logger.info("\n[PHASE 5] Generating evaluation report...")
+        logger.info("\n[PHASE 6] Generating evaluation report...")
         report_path = generate_evaluation_report(metrics, Path(args.output))
         
         logger.info("\n" + "=" * 80)
@@ -135,6 +195,24 @@ def main():
             print(f"Errors: {len(metrics['errors'])}")
         if metrics['warnings']:
             print(f"Warnings: {len(metrics['warnings'])}")
+        
+        # AI evaluation summary
+        if metrics.get('ai_evaluation', {}).get('enabled'):
+            ai_eval = metrics['ai_evaluation']
+            provider_name = args.ai_provider.upper() if args.use_ai_eval else "AI"
+            if 'error' not in ai_eval:
+                print("\n" + "-" * 80)
+                print(f"AI EVALUATION SUMMARY ({provider_name})")
+                print("-" * 80)
+                print(f"Average quality score: {ai_eval.get('average_score', 0):.1f}/100")
+                print(f"Evaluated samples: {ai_eval.get('evaluated_samples', 0)}/{ai_eval.get('total_samples', 0)}")
+                if 'criterion_averages' in ai_eval:
+                    print("\nCriterion averages:")
+                    for criterion, score in ai_eval['criterion_averages'].items():
+                        print(f"  {criterion.capitalize()}: {score:.1f}/100")
+            else:
+                print(f"\nAI Evaluation Error: {ai_eval['error']}")
+        
         print("=" * 80)
         
     except KeyboardInterrupt:

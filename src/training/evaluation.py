@@ -43,6 +43,7 @@ def evaluate_model(
     temperature: float = 0.7,
     batch_size: int = 4,
     use_fast_generation: bool = True,
+    collect_for_ai_eval: bool = False,
 ) -> Dict[str, Any]:
     """
     Evaluate model on evaluation dataset.
@@ -56,9 +57,10 @@ def evaluate_model(
         temperature: Sampling temperature (0.0 = greedy, higher = more random)
         batch_size: Number of samples to process in parallel
         use_fast_generation: Use faster generation settings (greedy decoding)
+        collect_for_ai_eval: If True, collect prompts and responses for AI evaluation
         
     Returns:
-        Dictionary with evaluation metrics
+        Dictionary with evaluation metrics (includes _ai_eval_prompts and _ai_eval_responses if collect_for_ai_eval=True)
     """
     total_samples = min(len(eval_dataset), max_samples)
     logger.info(f"Evaluating model on {total_samples} samples (batch_size={batch_size}, fast_generation={use_fast_generation})...")
@@ -77,6 +79,11 @@ def evaluate_model(
         "errors": [],
         "warnings": [],
     }
+    
+    # Collect prompts and responses for AI evaluation if enabled
+    if collect_for_ai_eval:
+        metrics["_ai_eval_prompts"] = []
+        metrics["_ai_eval_responses"] = []
     
     # Prepare all prompts first
     # Match the training format: use Input column (scenario) as instruction
@@ -170,6 +177,11 @@ def evaluate_model(
                         
                         # Remove any trailing </s> tokens or extra whitespace
                         response = response.replace("</s>", "").strip()
+                        
+                        # Collect for AI evaluation if enabled
+                        if collect_for_ai_eval:
+                            metrics["_ai_eval_prompts"].append(instruction)
+                            metrics["_ai_eval_responses"].append(response)
                         
                         # First try to validate as JSON (in case model generates JSON)
                         is_valid_json, parsed_json, json_error = validate_json_structure(
