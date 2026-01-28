@@ -1,4 +1,4 @@
-make tra# Crisis-Agent Fine-Tuning Pipeline
+# Crisis-Agent Fine-Tuning Pipeline
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
@@ -18,7 +18,7 @@ A complete end-to-end pipeline for fine-tuning Mistral-7B as an **AI Emergency K
 - **Comprehensive logging** with rotating file handlers
 - **Error handling** with graceful recovery
 - **JSON validation** for structured responses
-- **Evaluation tools** for model quality assessment
+- **Evaluation tools** for model quality assessment (standard + optional AI evaluation via Claude, OpenAI, or Gemini)
 - **Easy deployment** with merged model support
 
 ## 📋 Prerequisites
@@ -36,12 +36,18 @@ A complete end-to-end pipeline for fine-tuning Mistral-7B as an **AI Emergency K
 ### 1. Installation
 
 ```bash
-# Install dependencies
+# Create and activate conda environment (recommended)
+conda create -n crisis_agent python=3.10 -y
+conda activate crisis_agent
+
+# Install dependencies (see setup_commands.sh for full setup)
 pip install -r requirements.txt
 
 # Or use Makefile
 make setup
 ```
+
+> **Note**: `requirements.txt` is generated from `pip freeze` for reproducible installs. Use `setup_commands.sh` for conda env + deps + git config + verify.
 
 ### 2. Environment Setup
 
@@ -66,9 +72,9 @@ $env:HF_TOKEN="your_huggingface_token_here"     # Windows PowerShell
 
 ### 3. Configuration
 
-The dataset is pre-configured to use `ianktoo/crisis-response-training`. Verify the configuration:
+The dataset is pre-configured to use `ianktoo/crisis-response-training-v2` with `Input` / `Output` columns. Verify the configuration:
 
-- **`dataset_config.yaml`**: Dataset is already set. **Verify column names** match your dataset structure
+- **`dataset_config.yaml`**: Dataset and column names (`Input`, `Output`). Use `instruction` / `response` for local JSONL.
 - **`model_config.yaml`**: Adjust model and LoRA parameters if needed
 - **`training_config.yaml`**: Configure training hyperparameters if needed
 
@@ -107,17 +113,21 @@ make train
 ### 5. Evaluation
 
 ```bash
-# Evaluate model
+# Standard evaluation
 python scripts/evaluate.py --checkpoint outputs/checkpoints/final
 
-# With AI-based evaluation (Claude) - optional
+# With AI-based evaluation (optional) – Claude, OpenAI, or Gemini
 python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai
+python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai --ai-provider openai
+python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai --ai-provider gemini
 
 # Or use Makefile
 make evaluate
+make evaluate-ai        # AI evaluation (Claude)
+make evaluate-ai-gemini # AI evaluation (Gemini)
 ```
 
-> **See [docs/ai-evaluation.md](docs/ai-evaluation.md) for AI-based evaluation guide.**
+> **See [docs/ai-evaluation.md](docs/ai-evaluation.md) for AI evaluation (Claude, OpenAI, Gemini).**
 
 ### 6. Merge LoRA (Optional)
 
@@ -176,18 +186,21 @@ crisis_agent_finetune/
 │   ├── hardware-setup.md
 │   ├── dataset-setup.md
 │   ├── environment-variables.md
+│   ├── ai-evaluation.md
 │   └── testing.md
 ├── tests/                # Test suite
 │   ├── unit/            # Unit tests
 │   ├── integration/     # Integration tests
 │   └── README.md        # Testing documentation
-├── Makefile              # Automation
-├── requirements.txt     # Dependencies
-├── pytest.ini           # Pytest configuration
+├── Makefile              # Automation (train, evaluate, evaluate-ai, merge, infer, clean)
+├── setup_commands.sh     # Full setup: conda env, deps, git config, verify
+├── activate_env.sh       # Activate conda env and cd to project
+├── requirements.txt      # Dependencies (pip freeze for reproducible installs)
+├── pytest.ini            # Pytest configuration
 ├── .env.example          # Environment variables template
 ├── LICENSE               # MIT License with attribution
 ├── CHANGELOG.md          # Version history and changes
-└── README.md            # This file
+└── README.md             # This file
 ```
 
 ## ⚙️ Configuration
@@ -198,15 +211,15 @@ Edit `configs/dataset_config.yaml`:
 
 ```yaml
 dataset:
-  hf_dataset_name: "ianktoo/crisis-response-training"  # Crisis scenario training dataset
+  hf_dataset_name: "ianktoo/crisis-response-training-v2"  # Crisis scenario training dataset
   train_split: "train"
   eval_split: "validation"
-  instruction_column: "instruction"
-  response_column: "response"
+  instruction_column: "Input"   # Hugging Face dataset; use "instruction" for local JSONL
+  response_column: "Output"     # Hugging Face dataset; use "response" for local JSONL
   max_samples: -1  # -1 for all samples
 ```
 
-> **Note**: The default dataset is configured to use `ianktoo/crisis-response-training`. Update the column names (`instruction_column`, `response_column`) to match your dataset structure.
+> **Note**: The default uses `ianktoo/crisis-response-training-v2` with `Input` / `Output`. For local JSONL, use `instruction` / `response`.
 
 ### Model Configuration
 
@@ -264,10 +277,15 @@ python scripts/train.py --output-dir "outputs/my_experiments"
 ### Evaluate with Custom Settings
 
 ```bash
+# Standard evaluation
 python scripts/evaluate.py \
   --checkpoint outputs/checkpoints/final \
   --max-samples 200 \
   --output outputs/custom_eval_report.json
+
+# AI evaluation (Claude / OpenAI / Gemini)
+python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai --ai-provider gemini
+python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai --ai-max-samples 50
 ```
 
 ### Inference with JSON Validation
@@ -284,10 +302,10 @@ python scripts/infer.py \
 The evaluation script reports on the crisis companion's performance:
 
 - **Valid JSON**: Percentage of responses with valid JSON structure
-- **Valid Structure**: Percentage with correct crisis-response structure
-- **Crisis Response Quality**: Validation of action, priority, reasoning, and resources
-- **Safety Alignment**: Basic safety checks on responses
-- **Error Logging**: Detailed logs of invalid responses
+- **Valid structured text**: Responses with FACTS, UNCERTAINTIES, ANALYSIS, GUIDANCE
+- **Valid structure**: Crisis-response structure validation
+- **AI evaluation (optional)**: Quality scores via Claude, OpenAI, or Gemini (see [docs/ai-evaluation.md](docs/ai-evaluation.md))
+- **Error logging**: Detailed logs of invalid responses
 
 ## 🐛 Troubleshooting
 
@@ -364,11 +382,12 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing documentation, 
 - [docs/dataset-setup.md](docs/dataset-setup.md) - Complete guide for configuring Hugging Face datasets
 - [docs/dataset-info.md](docs/dataset-info.md) - Information about the crisis-response-training dataset
 - [docs/environment-variables.md](docs/environment-variables.md) - Environment variables configuration
+- [docs/ai-evaluation.md](docs/ai-evaluation.md) - AI evaluation with Claude, OpenAI, Gemini
 - [docs/model-naming.md](docs/model-naming.md) - Guide for controlling output model names
 - [docs/testing.md](docs/testing.md) - Comprehensive testing documentation
 - [tests/README.md](tests/README.md) - Test suite structure and quick reference
 - [GitHub Repository](https://github.com/ianktoo/crisis_agent_finetune) - Source code and issues
-- [Dataset Repository](https://huggingface.co/datasets/ianktoo/crisis-response-training) - Training dataset
+- [Dataset Repository](https://huggingface.co/datasets/ianktoo/crisis-response-training-v2) - Training dataset (v2)
 - [Unsloth Documentation](https://github.com/unslothai/unsloth)
 - [Hugging Face Datasets](https://huggingface.co/docs/datasets/)
 - [LoRA Paper](https://arxiv.org/abs/2106.09685)
@@ -386,7 +405,7 @@ This is a complete pipeline ready for use. Feel free to customize:
 ## 🔗 Links
 
 - **GitHub Repository**: [ianktoo/crisis_agent_finetune](https://github.com/ianktoo/crisis_agent_finetune)
-- **Training Dataset**: [ianktoo/crisis-response-training](https://huggingface.co/datasets/ianktoo/crisis-response-training)
+- **Training Dataset**: [ianktoo/crisis-response-training-v2](https://huggingface.co/datasets/ianktoo/crisis-response-training-v2)
 
 ## 📄 License
 
@@ -422,11 +441,11 @@ For academic publications, please cite:
 
 ## 🎯 Next Steps
 
-1. **Verify dataset configuration** in `configs/dataset_config.yaml` (default: `ianktoo/crisis-response-training`)
-2. **Check column names** match your dataset structure (`instruction_column`, `response_column`)
+1. **Verify dataset configuration** in `configs/dataset_config.yaml` (default: `ianktoo/crisis-response-training-v2`, columns `Input` / `Output`)
+2. **Check column names** match your dataset (`Input`/`Output` for HF, `instruction`/`response` for JSONL)
 3. **Adjust hyperparameters** based on your GPU memory
-4. **Run training** with `python scripts/train.py`
-5. **Evaluate** your AI Emergency Kit model
+4. **Run training** with `python scripts/train.py` or `make train`
+5. **Evaluate** with `make evaluate` or `make evaluate-ai` for AI-backed evaluation
 6. **Deploy** using the merged model or LoRA checkpoint
 
 > **🚀 Ready to deploy?** 
@@ -437,11 +456,11 @@ For academic publications, please cite:
 
 ## 📦 Dataset
 
-This pipeline is configured to use the **Crisis Response Training Dataset**:
+This pipeline is configured to use the **Crisis Response Training Dataset (v2)**:
 
-- **Hugging Face**: [ianktoo/crisis-response-training](https://huggingface.co/datasets/ianktoo/crisis-response-training)
+- **Hugging Face**: [ianktoo/crisis-response-training-v2](https://huggingface.co/datasets/ianktoo/crisis-response-training-v2)
 - **Purpose**: Training data for crisis companion application
-- **Format**: Instruction-response pairs for crisis scenarios
+- **Format**: `Input` (scenario) / `Output` (structured text: FACTS, UNCERTAINTIES, ANALYSIS, GUIDANCE)
 - **Type**: Synthetic dataset for training crisis response language models
 
 ### Dataset Citation
@@ -458,7 +477,7 @@ If you use this dataset in your research, please cite:
 }
 ```
 
-Update `configs/dataset_config.yaml` if you need to use a different dataset or adjust column mappings.
+Update `configs/dataset_config.yaml` if you use a different dataset or need different column mappings.
 
 ---
 

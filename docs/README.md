@@ -9,9 +9,10 @@ Welcome to the crisis-agent fine-tuning pipeline documentation!
 - **[Hardware Setup](hardware-setup.md)** - Server specifications, memory optimization, and performance tuning for 16GB VRAM servers
 - **[Dataset Setup](dataset-setup.md)** - Complete guide for configuring and using Hugging Face datasets
 - **[Dataset Info](dataset-info.md)** - Information about the crisis-response-training dataset
-- **[Environment Variables](environment-variables.md)** - All environment variables used by the pipeline
+- **[Environment Variables](environment-variables.md)** - All environment variables (HF, AI evaluation keys, etc.)
 - **[Model Naming](model-naming.md)** - Guide for controlling output model names and checkpoints
 - **[Python Compatibility](python-compatibility.md)** - Python version compatibility guide
+- **[AI Evaluation](ai-evaluation.md)** - AI-based evaluation with Claude, OpenAI, or Gemini
 
 ### Development & Testing
 
@@ -43,6 +44,7 @@ docs/
 ├── hardware-setup.md            # Hardware configuration and optimization
 ├── dataset-setup.md             # Hugging Face dataset setup guide
 ├── environment-variables.md     # Environment variables reference
+├── ai-evaluation.md             # AI evaluation (Claude, OpenAI, Gemini)
 ├── model-naming.md              # Model naming and checkpoint control
 └── testing.md                   # Testing documentation and guide
 ```

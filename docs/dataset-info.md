@@ -2,9 +2,9 @@
 
 ## Primary Dataset
 
-This pipeline is configured to use the **Crisis Response Training Dataset**:
+This pipeline is configured to use the **Crisis Response Training Dataset (v2)**:
 
-- **Hugging Face Repository**: [ianktoo/crisis-response-training](https://huggingface.co/datasets/ianktoo/crisis-response-training)
+- **Hugging Face Repository**: [ianktoo/crisis-response-training-v2](https://huggingface.co/datasets/ianktoo/crisis-response-training-v2)
 - **Purpose**: Training data for crisis companion application
 - **Use Case**: Fine-tuning Mistral-7B to provide structured, actionable responses to crisis scenarios
 
@@ -14,28 +14,40 @@ The dataset is pre-configured in `configs/dataset_config.yaml`:
 
 ```yaml
 dataset:
-  hf_dataset_name: "ianktoo/crisis-response-training"
+  hf_dataset_name: "ianktoo/crisis-response-training-v2"
   train_split: "train"
   eval_split: "validation"
-  instruction_column: "instruction"
-  response_column: "response"
+  instruction_column: "Input"   # Scenario / instruction
+  response_column: "Output"     # Structured text response
 ```
 
 ## Dataset Structure
 
-The dataset should contain crisis scenario training data with:
+The dataset contains crisis scenario training data with:
 
-- **Instructions**: Crisis scenarios, emergency situations, or questions requiring structured responses
-- **Responses**: Structured JSON responses with actions, priorities, reasoning, and resources
+- **Input**: Crisis scenarios (Category, Scenario, Role). Served as the instruction.
+- **Output**: Structured text with sections **FACTS**, **UNCERTAINTIES**, **ANALYSIS**, **GUIDANCE** (bullet points).
+- **Columns**: `Instruction`, `Input`, `Output`, `category`, `role`.
 
 ### Expected Format
 
-```json
-{
-  "instruction": "A building is on fire with people trapped inside. What should be done?",
-  "response": "{\"action\": \"evacuate immediately\", \"priority\": \"critical\", \"reasoning\": \"Fire poses immediate danger\", \"resources\": [\"fire_department\", \"ambulance\"]}"
-}
-```
+- **Input**: e.g. `"Category: substance abuse crisis\n\nScenario:\n..."` (full scenario + role).
+- **Output**: Structured text, e.g.:
+
+  ```
+  FACTS:
+    • Person is unconscious in a park
+    • Multiple syringes are near the person
+  UNCERTAINTIES:
+    • Person's medical condition
+    • Cause of unconsciousness
+  ANALYSIS:
+    ...
+  GUIDANCE:
+    ...
+  ```
+
+For local JSONL, use `instruction` / `response` and point `hf_dataset_name` to the file path.
 
 ## Verifying Dataset Structure
 
@@ -44,10 +56,10 @@ Before training, verify your dataset structure:
 ```python
 from datasets import load_dataset
 
-dataset = load_dataset("ianktoo/crisis-response-training")
+dataset = load_dataset("ianktoo/crisis-response-training-v2")
 print(dataset)
 print(dataset["train"][0])  # Check first sample
-print(dataset["train"].features)  # Check column names
+print(dataset["train"].column_names)  # Expect: Instruction, Input, Output, category, role
 ```
 
 ## Customizing Dataset Configuration
@@ -56,9 +68,9 @@ If your dataset has different column names, update `configs/dataset_config.yaml`
 
 ```yaml
 dataset:
-  hf_dataset_name: "ianktoo/crisis-response-training"
-  instruction_column: "prompt"      # If your dataset uses "prompt" instead of "instruction"
-  response_column: "answer"         # If your dataset uses "answer" instead of "response"
+  hf_dataset_name: "ianktoo/crisis-response-training-v2"
+  instruction_column: "Input"       # Or "prompt", "instruction", etc.
+  response_column: "Output"         # Or "answer", "response", etc.
 ```
 
 ## Dataset Access
@@ -116,8 +128,8 @@ If the dataset is updated on Hugging Face:
 
 ```yaml
 dataset:
-  hf_dataset_name: "ianktoo/crisis-response-training"
-  revision: "v1.2"  # Specific version
+  hf_dataset_name: "ianktoo/crisis-response-training-v2"
+  revision: "main"  # Or specific tag/commit
 ```
 
 ## Citation
@@ -129,13 +141,13 @@ If you use this dataset in your research, please cite:
   title = {Crisis Response Training Dataset},
   author = {Ian K. T.},
   year = {2026},
-  url = {https://huggingface.co/datasets/ianktoo/crisis-response-training},
+  url = {https://huggingface.co/datasets/ianktoo/crisis-response-training-v2},
   note = {Synthetic dataset for training crisis response language models}
 }
 ```
 
 ## Related Resources
 
-- **Dataset Repository**: https://huggingface.co/datasets/ianktoo/crisis-response-training
+- **Dataset Repository**: https://huggingface.co/datasets/ianktoo/crisis-response-training-v2
 - **Dataset Setup Guide**: [dataset-setup.md](dataset-setup.md)
 - **Main README**: [../README.md](../README.md)

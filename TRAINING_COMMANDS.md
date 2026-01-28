@@ -164,6 +164,28 @@ O^O/ \_/ \    Batch size per device = 2 | Gradient accumulation steps = 4
 
 ---
 
+## Evaluation
+
+After training, evaluate the model:
+
+```bash
+# Standard evaluation
+make evaluate
+# or
+python scripts/evaluate.py --checkpoint outputs/checkpoints/final
+
+# AI-based evaluation (Claude, OpenAI, or Gemini)
+make evaluate-ai           # Claude
+make evaluate-ai-openai    # OpenAI
+make evaluate-ai-gemini    # Gemini
+# or
+python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai --ai-provider gemini
+```
+
+Requires `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GEMINI_API_KEY` for AI evaluation. See [docs/ai-evaluation.md](docs/ai-evaluation.md).
+
+---
+
 ## Troubleshooting Commands
 
 ```bash
@@ -175,7 +197,7 @@ echo $CONDA_DEFAULT_ENV
 python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}')"
 
 # Check dataset access
-python -c "from datasets import load_dataset; ds = load_dataset('ianktoo/crisis-response-training'); print(f'Samples: {len(ds[\"train\"])}')"
+python -c "from datasets import load_dataset; ds = load_dataset('ianktoo/crisis-response-training-v2'); print(f'Samples: {len(ds[\"train\"])}')"
 
 # Verify configuration
 python scripts/verify_setup.py

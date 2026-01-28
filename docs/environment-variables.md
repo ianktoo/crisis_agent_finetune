@@ -40,6 +40,30 @@ export HF_TOKEN="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 ## Optional Variables
 
+### AI Evaluation (Claude, OpenAI, Gemini)
+
+Used by `scripts/evaluate.py --ai` for AI-based quality evaluation.
+
+| Variable | Provider | Required when |
+|----------|----------|----------------|
+| `ANTHROPIC_API_KEY` | Claude | `--ai-provider anthropic` (default) |
+| `OPENAI_API_KEY` | OpenAI | `--ai-provider openai` |
+| `GEMINI_API_KEY` | Gemini | `--ai-provider gemini` |
+
+**Example**:
+```bash
+export ANTHROPIC_API_KEY="your_anthropic_key_here"
+export OPENAI_API_KEY="your_openai_key_here"
+export GEMINI_API_KEY="your_gemini_key_here"
+```
+
+**How to get**:
+- **Anthropic**: https://console.anthropic.com/
+- **OpenAI**: https://platform.openai.com/api-keys
+- **Gemini**: https://aistudio.google.com/app/apikey
+
+**Usage**: Set in `.env` or export before running `python scripts/evaluate.py --ai`. See [ai-evaluation.md](ai-evaluation.md).
+
 ### Weights & Biases (W&B) Integration
 
 **Variable**: `WANDB_API_KEY`
@@ -232,14 +256,19 @@ Create a `.env` file in the project root:
 # Hugging Face
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+# AI evaluation (optional; for evaluate.py --ai)
+# ANTHROPIC_API_KEY=your_anthropic_key_here
+# OPENAI_API_KEY=your_openai_key_here
+# GEMINI_API_KEY=your_gemini_key_here
+
 # Weights & Biases (optional)
-WANDB_API_KEY=your_wandb_api_key_here
+# WANDB_API_KEY=your_wandb_api_key_here
 
 # Custom cache directory (optional)
-HF_HOME=/path/to/cache
+# HF_HOME=/path/to/cache
 
 # CUDA device selection (optional)
-CUDA_VISIBLE_DEVICES=0
+# CUDA_VISIBLE_DEVICES=0
 ```
 
 **Note**: The `.env` file is already in `.gitignore` and will not be committed.

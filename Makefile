@@ -1,7 +1,7 @@
 # Makefile for crisis-agent fine-tuning pipeline
 # Usage: make <target>
 
-.PHONY: help install train evaluate merge infer clean setup
+.PHONY: help install train evaluate evaluate-ai evaluate-ai-openai evaluate-ai-gemini merge infer clean setup
 
 # Default target
 help:
@@ -9,12 +9,15 @@ help:
 	@echo "=================================="
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make setup       - Install dependencies"
-	@echo "  make train       - Run training"
-	@echo "  make evaluate    - Evaluate model"
-	@echo "  make merge       - Merge LoRA weights"
-	@echo "  make infer       - Run inference (interactive)"
-	@echo "  make clean       - Clean output directories"
+	@echo "  make setup            - Install dependencies"
+	@echo "  make train            - Run training"
+	@echo "  make evaluate         - Evaluate model (standard)"
+	@echo "  make evaluate-ai      - Evaluate with AI (Claude)"
+	@echo "  make evaluate-ai-openai  - Evaluate with AI (OpenAI)"
+	@echo "  make evaluate-ai-gemini  - Evaluate with AI (Gemini)"
+	@echo "  make merge            - Merge LoRA weights"
+	@echo "  make infer            - Run inference (interactive)"
+	@echo "  make clean            - Clean output directories"
 	@echo ""
 
 # Install dependencies
@@ -28,10 +31,25 @@ train:
 	@echo "Starting training..."
 	python scripts/train.py
 
-# Evaluate model
+# Evaluate model (standard)
 evaluate:
 	@echo "Evaluating model..."
 	python scripts/evaluate.py --checkpoint outputs/checkpoints/final
+
+# Evaluate with AI (Claude)
+evaluate-ai:
+	@echo "Evaluating with AI (Claude)..."
+	python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai
+
+# Evaluate with AI (OpenAI)
+evaluate-ai-openai:
+	@echo "Evaluating with AI (OpenAI)..."
+	python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai --ai-provider openai
+
+# Evaluate with AI (Gemini)
+evaluate-ai-gemini:
+	@echo "Evaluating with AI (Gemini)..."
+	python scripts/evaluate.py --checkpoint outputs/checkpoints/final --ai --ai-provider gemini
 
 # Merge LoRA weights
 merge:
