@@ -9,7 +9,7 @@ dataset:
   #   - Private dataset: "username/private_dataset" (requires HF token)
   #   - With revision: "username/dataset_name:main" or "username/dataset_name:v1.0"
   #   - Local JSONL file: "data/crisis_response_json.jsonl" (relative to project root)
-  hf_dataset_name: "ianktoo/crisis-response-training"  # Hugging Face dataset with train/validation/test splits
+  hf_dataset_name: "ianktoo/crisis-response-training-v2"  # Hugging Face dataset with train/validation/test splits
   # hf_dataset_name: "data/crisis_response_json.jsonl"  # Local JSON dataset (alternative)
   
   # Optional: Hugging Face token for private datasets

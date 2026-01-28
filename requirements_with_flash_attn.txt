@@ -1,0 +1,22 @@
+# Full requirements including flash-attn (optional)
+# Use this only if you specifically need flash-attn
+# Note: flash-attn requires torch to be available during build
+
+torch
+torchvision
+unsloth
+datasets
+transformers
+accelerate
+bitsandbytes
+flash-attn  # Requires: pip install flash-attn --no-build-isolation (after torch is installed)
+pyyaml
+huggingface_hub
+
+# Testing dependencies
+pytest
+pytest-cov
+pytest-mock
+
+# Progress bars
+tqdm

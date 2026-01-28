@@ -1,17 +1,18 @@
-unsloth[torch]
 torch
+torchvision
+unsloth
 datasets
 transformers
 accelerate
 bitsandbytes
-flash-attn
+# flash-attn  # Optional - Unsloth will use xformers as fallback if not available
 pyyaml
-huggingface_hub>=0.20.0
+huggingface_hub
 
 # Testing dependencies
-pytest>=7.4.0
-pytest-cov>=4.1.0
-pytest-mock>=3.11.1
+pytest
+pytest-cov
+pytest-mock
 
 # Progress bars
-tqdm>=4.65.0
+tqdm

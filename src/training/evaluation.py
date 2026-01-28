@@ -80,22 +80,28 @@ def evaluate_model(
     
     # Prepare all prompts first
     # Match the training format: use Input column (scenario) as instruction
+    # Note: After formatting, dataset has 'instruction' column (from Input)
     prompts = []
     for sample in eval_samples:
         # Try different column names to find the instruction/scenario
+        # Priority: Input (raw dataset) > instruction (formatted dataset) > input > text extraction
         instruction = (
-            sample.get("Input", "") or  # Hugging Face dataset format
-            sample.get("instruction", "") or  # Alternative format
+            sample.get("Input", "") or  # Raw Hugging Face dataset format
+            sample.get("instruction", "") or  # Formatted dataset (from format_records)
             sample.get("input", "")
         )
         
         if not instruction:
-            # Fallback: try to extract from text field
+            # Fallback: try to extract from text field (formatted training text)
             text = sample.get("text", "")
             if "[INST]" in text:
                 instruction = text.split("[INST]")[1].split("[/INST]")[0].strip()
             else:
                 instruction = text.split("\n")[0] if "\n" in text else text
+        
+        if not instruction:
+            logger.warning(f"Could not extract instruction from sample {len(prompts)}")
+            instruction = "Evaluate this scenario"  # Fallback prompt
         
         # Format prompt to match training format (no JSON instruction for structured text)
         prompts.append(f"<s>[INST] {instruction} [/INST]")
