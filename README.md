@@ -374,6 +374,20 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing documentation, 
 
 ## 📚 Additional Resources
 
+### Wiki Documentation (Comprehensive)
+
+- **[Wiki Home](wiki/Home.md)** - Complete documentation wiki
+- [Getting Started](wiki/Getting-Started.md) - Installation and first run
+- [Configuration](wiki/Configuration.md) - All config files explained
+- [Training Guide](wiki/Training.md) - Complete training workflow
+- [Evaluation](wiki/Evaluation.md) - Standard and AI-based evaluation
+- [Deployment](wiki/Deployment.md) - HuggingFace, LM Studio, Ollama
+- [Makefile Reference](wiki/Makefile-Reference.md) - All make commands documented
+- [Scripts Reference](wiki/Scripts-Reference.md) - Script documentation
+- [Troubleshooting](wiki/Troubleshooting.md) - Common issues and fixes
+
+### Other Documentation
+
 - [PIPELINE.md](PIPELINE.md) - Complete pipeline checklist with progress tracking
 - [MODEL_BRANDING.md](MODEL_BRANDING.md) - AI Emergency Kit branding guide and guidelines
 - [LICENSE](LICENSE) - MIT License with attribution requirements
@@ -386,6 +400,9 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing documentation, 
 - [docs/model-naming.md](docs/model-naming.md) - Guide for controlling output model names
 - [docs/testing.md](docs/testing.md) - Comprehensive testing documentation
 - [tests/README.md](tests/README.md) - Test suite structure and quick reference
+
+### External Resources
+
 - [GitHub Repository](https://github.com/ianktoo/crisis_agent_finetune) - Source code and issues
 - [Dataset Repository](https://huggingface.co/datasets/ianktoo/crisis-response-training-v2) - Training dataset (v2)
 - [Unsloth Documentation](https://github.com/unslothai/unsloth)

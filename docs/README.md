@@ -2,6 +2,21 @@
 
 Welcome to the crisis-agent fine-tuning pipeline documentation!
 
+## 📖 Wiki (Recommended)
+
+For comprehensive documentation, see the **[Wiki](../wiki/Home.md)** which includes:
+
+- [Getting Started](../wiki/Getting-Started.md) - Installation and first run
+- [Configuration](../wiki/Configuration.md) - All config files explained
+- [Training Guide](../wiki/Training.md) - Complete training workflow
+- [Evaluation](../wiki/Evaluation.md) - Standard and AI-based evaluation
+- [Deployment](../wiki/Deployment.md) - HuggingFace, LM Studio, Ollama
+- [Makefile Reference](../wiki/Makefile-Reference.md) - All make commands
+- [Scripts Reference](../wiki/Scripts-Reference.md) - Script documentation
+- [Troubleshooting](../wiki/Troubleshooting.md) - Common issues and fixes
+
+---
+
 ## 📚 Documentation Index
 
 ### Setup & Configuration

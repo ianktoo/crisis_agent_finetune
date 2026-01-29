@@ -72,7 +72,14 @@ def main():
         
         # Merge LoRA weights
         logger.info("Merging LoRA weights into base model...")
-        model = FastLanguageModel.merge_and_unload(model)
+        # merge_and_unload() is a method on the model instance (PEFT model)
+        if hasattr(model, 'merge_and_unload'):
+            model = model.merge_and_unload()
+        elif hasattr(model, 'merge_adapter'):
+            # Alternative method if merge_and_unload doesn't exist
+            model.merge_adapter()
+        else:
+            raise AttributeError("Model does not have merge_and_unload() or merge_adapter() method. Is this a LoRA checkpoint?")
         
         logger.info("LoRA weights merged successfully")
         

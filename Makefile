@@ -1,7 +1,7 @@
 # Makefile for crisis-agent fine-tuning pipeline
 # Usage: make <target>
 
-.PHONY: help install train evaluate evaluate-ai evaluate-ai-openai evaluate-ai-gemini merge infer clean setup
+.PHONY: help install train evaluate evaluate-ai evaluate-ai-openai evaluate-ai-gemini merge infer clean setup export-gguf export-ollama export-lmstudio
 
 # Default target
 help:
@@ -17,6 +17,9 @@ help:
 	@echo "  make evaluate-ai-gemini  - Evaluate with AI (Gemini)"
 	@echo "  make merge            - Merge LoRA weights"
 	@echo "  make infer            - Run inference (interactive)"
+	@echo "  make export-gguf      - Export to GGUF format (for LM Studio)"
+	@echo "  make export-ollama    - Export to GGUF and setup Ollama"
+	@echo "  make export-lmstudio  - Export to GGUF for LM Studio (q8_0)"
 	@echo "  make clean            - Clean output directories"
 	@echo ""
 
@@ -108,3 +111,44 @@ upload-hf:
 		exit 1; \
 	fi
 	python scripts/upload_to_hf.py --checkpoint $(CHECKPOINT) --repo-name $(REPO)
+
+# Export to GGUF format (default: q4_k_m quantization)
+export-gguf:
+	@echo "Exporting model to GGUF format..."
+	CRISIS_GGUF_EXEC_DIR=/home/jovyan python scripts/export_gguf.py --checkpoint outputs/checkpoints/final --output outputs/gguf
+
+# Export to GGUF and setup for Ollama
+export-ollama:
+	@echo "Exporting model to GGUF for Ollama..."
+	CRISIS_GGUF_EXEC_DIR=/home/jovyan python scripts/export_gguf.py --checkpoint outputs/checkpoints/final --output outputs/gguf --ollama
+
+# Export to GGUF for LM Studio (higher quality q8_0)
+export-lmstudio:
+	@echo "Exporting model to GGUF for LM Studio (q8_0)..."
+	CRISIS_GGUF_EXEC_DIR=/home/jovyan python scripts/export_gguf.py --checkpoint outputs/checkpoints/final --output outputs/gguf -q q8_0
+
+# Export to GGUF with custom settings
+# Usage: make export-gguf-custom CHECKPOINT=path QUANT=q4_k_m OUTPUT=outputs/gguf
+export-gguf-custom:
+	@echo "Exporting model to GGUF with custom settings..."
+	@if [ -z "$(CHECKPOINT)" ]; then \
+		echo "Error: CHECKPOINT required"; \
+		echo "Example: make export-gguf-custom CHECKPOINT=outputs/checkpoints/final QUANT=q8_0"; \
+		exit 1; \
+	fi
+	CRISIS_GGUF_EXEC_DIR=/home/jovyan python scripts/export_gguf.py \
+		--checkpoint $(CHECKPOINT) \
+		--output $(or $(OUTPUT),outputs/gguf) \
+		-q $(or $(QUANT),q4_k_m) \
+		$(if $(OLLAMA),--ollama)
+
+# Push GGUF to Hugging Face Hub
+upload-gguf:
+	@echo "Pushing GGUF to Hugging Face Hub..."
+	@echo "Usage: make upload-gguf CHECKPOINT=path REPO=username/repo-name-gguf"
+	@if [ -z "$(CHECKPOINT)" ] || [ -z "$(REPO)" ]; then \
+		echo "Error: CHECKPOINT and REPO required"; \
+		echo "Example: make upload-gguf CHECKPOINT=outputs/checkpoints/final REPO=username/crisis-agent-gguf"; \
+		exit 1; \
+	fi
+	CRISIS_GGUF_EXEC_DIR=/home/jovyan python scripts/export_gguf.py --checkpoint $(CHECKPOINT) --push-to-hub $(REPO) -q $(or $(QUANT),q4_k_m)

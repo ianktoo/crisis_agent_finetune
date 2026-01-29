@@ -89,6 +89,11 @@ After your training completes, follow these steps in order:
   - [ ] Verify upload on Hugging Face
   - [ ] Create/update model card
   - [ ] Test loading model from HF
+- [ ] **Step 7**: Export for Local Deployment (Optional)
+  - [ ] Export to GGUF (`make export-gguf` or `make export-lmstudio`)
+  - [ ] Test in LM Studio
+  - [ ] Setup for Ollama (`make export-ollama`)
+  - [ ] Test with `ollama run crisis-agent`
 
 ---
 
@@ -332,6 +337,9 @@ python scripts/upload_to_hf.py \
 | Test | `make test` | Test results |
 | Merge | `make merge` | `outputs/final_model/` |
 | Upload | `python scripts/upload_to_hf.py ...` | Hugging Face repo |
+| Export GGUF | `make export-gguf` | `outputs/gguf/*.gguf` |
+| Export Ollama | `make export-ollama` | `outputs/gguf/` + Modelfile |
+| Export LM Studio | `make export-lmstudio` | `outputs/gguf/*.gguf` (q8_0) |
 
 ---
 
@@ -378,12 +386,136 @@ huggingface-cli login
 
 ---
 
+---
+
+## Step 7: Export for Local Deployment (LM Studio / Ollama)
+
+Export your model to GGUF format for running locally in LM Studio or Ollama.
+
+### Export to GGUF (for LM Studio)
+
+```bash
+# Export with default settings (q4_k_m quantization)
+make export-gguf
+
+# Or export with higher quality (q8_0)
+make export-lmstudio
+
+# Custom export
+python scripts/export_gguf.py \
+  --checkpoint outputs/checkpoints/final \
+  --output outputs/gguf \
+  -q q8_0
+```
+
+**Available quantization methods:**
+| Method | Description | Use Case |
+|--------|-------------|----------|
+| `q4_k_m` | 4-bit (default) | Best balance of quality/size |
+| `q8_0` | 8-bit | Higher quality, larger size |
+| `q5_k_m` | 5-bit | Good quality/size balance |
+| `q3_k_m` | 3-bit | Smallest, lower quality |
+| `f16` | Float16 | Full precision |
+
+### Using with LM Studio
+
+1. Export your model:
+   ```bash
+   make export-lmstudio
+   ```
+
+2. Import into LM Studio:
+   ```bash
+   # Using LM Studio CLI
+   lms import outputs/gguf/model-q8_0.gguf
+   
+   # Or manually copy to LM Studio models folder
+   cp outputs/gguf/*.gguf ~/.lmstudio/models/crisis-agent/
+   ```
+
+3. Open LM Studio → Chat → Select your model → Start chatting!
+
+4. (Optional) Serve as local API:
+   ```bash
+   # Start LM Studio server (in LM Studio Developer tab)
+   # Or via CLI
+   lms load crisis-agent --gpu=auto
+   lms server start --port 1234
+   ```
+
+### Export and Setup for Ollama
+
+```bash
+# Export and create Ollama Modelfile
+make export-ollama
+
+# Or with custom name
+python scripts/export_gguf.py \
+  --checkpoint outputs/checkpoints/final \
+  --output outputs/gguf \
+  --ollama \
+  --ollama-name my-crisis-agent
+```
+
+**Using with Ollama:**
+
+1. Export the model:
+   ```bash
+   make export-ollama
+   ```
+
+2. If Ollama is installed, the model is automatically registered. Run:
+   ```bash
+   ollama run crisis-agent
+   ```
+
+3. If Ollama wasn't installed during export, manually register:
+   ```bash
+   cd outputs/gguf
+   ollama create crisis-agent -f Modelfile
+   ollama run crisis-agent
+   ```
+
+### Push GGUF to Hugging Face Hub
+
+```bash
+# Push GGUF directly to Hub
+python scripts/export_gguf.py \
+  --checkpoint outputs/checkpoints/final \
+  --push-to-hub username/crisis-agent-gguf \
+  -q q4_k_m
+
+# Or use Makefile
+make upload-gguf CHECKPOINT=outputs/checkpoints/final REPO=username/crisis-agent-gguf
+```
+
+### Troubleshooting GGUF Export
+
+**Model output is gibberish/repeating:**
+- This is usually a chat template mismatch
+- Ensure you use the same template in LM Studio/Ollama as during training
+- The Modelfile we generate includes the correct template
+
+**File too large:**
+- Use a smaller quantization (q4_k_m or q3_k_m)
+- Consider using `q4_k_m` which is ~4GB for a 7B model
+
+**Ollama not found:**
+- Install Ollama from: https://ollama.ai
+- After installation, run: `make export-ollama`
+
+---
+
 ## 📚 Additional Resources
 
 - [Hugging Face Model Hub](https://huggingface.co/docs/hub/models-uploading)
 - [Unsloth Documentation](https://github.com/unslothai/unsloth)
+- [Unsloth GGUF Export](https://unsloth.ai/docs/basics/inference-and-deployment/saving-to-gguf)
+- [Unsloth Ollama Export](https://unsloth.ai/docs/basics/inference-and-deployment/saving-to-ollama)
+- [LM Studio Documentation](https://lmstudio.ai/docs)
+- [Ollama Documentation](https://github.com/ollama/ollama)
 - [Model Cards Guide](https://huggingface.co/docs/hub/model-cards)
 
 ---
 
-**Ready to deploy?** Follow the steps above, and your model will be available on Hugging Face! 🚀
+**Ready to deploy?** Follow the steps above, and your model will be available on Hugging Face, LM Studio, or Ollama! 🚀
