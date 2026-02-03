@@ -8,7 +8,8 @@
 # - Activate the environment
 # - Navigate to the project directory
 
-PROJECT_DIR="/home/jovyan/work/projects/crisis_agent_finetune"
+# Project root (same directory as this script)
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_NAME="crisis_agent"
 PYTHON_VERSION="3.10"
 

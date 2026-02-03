@@ -21,9 +21,16 @@ tests/
 
 ## Running Tests
 
+**Requirement:** Activate the project environment first so dependencies (e.g. `datasets`, `pytest`) are available:
+
+```bash
+source activate_env.sh   # or: conda activate crisis_agent
+```
+
 ### Run all tests
 ```bash
 pytest
+# Or: make test
 ```
 
 ### Run specific test file

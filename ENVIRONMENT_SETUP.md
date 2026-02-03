@@ -24,8 +24,8 @@ eval "$(conda shell.bash hook)"
 # Activate environment
 conda activate crisis_agent
 
-# Navigate to project
-cd /home/jovyan/work/projects/crisis_agent_finetune
+# Navigate to project (from repo root)
+cd /path/to/crisis_agent_finetune
 ```
 
 ## Quick Start Training
@@ -60,11 +60,21 @@ Or create an alias:
 
 ```bash
 # Add to ~/.bashrc
-echo 'alias crisis-env="source /home/jovyan/work/projects/crisis_agent_finetune/activate_env.sh"' >> ~/.bashrc
+echo 'alias crisis-env="source /path/to/crisis_agent_finetune/activate_env.sh"' >> ~/.bashrc
 source ~/.bashrc
 
 # Then just use:
 crisis-env
+```
+
+## Running Tests
+
+Tests require the project environment (so `datasets`, `pytest`, etc. are available). Activate first, then run:
+
+```bash
+source activate_env.sh
+pytest tests/ -v
+# Or: make test
 ```
 
 ## Verify Environment
@@ -77,7 +87,7 @@ echo $CONDA_DEFAULT_ENV
 
 # Check Python version
 python --version
-# Should show: Python 3.11.14
+# Should show: Python 3.10.x
 ```
 
 ## Install Dependencies
@@ -99,7 +109,7 @@ eval "$(conda shell.bash hook)"
 conda env list
 
 # If crisis_agent is missing, recreate it:
-conda create -n crisis_agent python=3.11 -y
+conda create -n crisis_agent python=3.10 -y
 ```
 
 ### Conda command not found
@@ -123,5 +133,5 @@ This can happen if:
 ## Environment Details
 
 - **Name:** `crisis_agent`
-- **Python:** 3.11.14
-- **Location:** `/home/jovyan/miniconda3/envs/crisis_agent`
+- **Python:** 3.10.x
+- **Location:** typically `$CONDA_PREFIX` or `~/miniconda3/envs/crisis_agent`
