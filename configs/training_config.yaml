@@ -50,3 +50,13 @@ training:
   # - Reduce per_device_train_batch_size to 1
   # - Increase gradient_accumulation_steps to 8
   # - Reduce max_seq_length in model_config.yaml to 1024
+
+# Optional: export to GGUF after training (LM Studio, Ollama)
+# Uses the in-memory model so no extra load step. Set to false to skip and run scripts/export_gguf.py later.
+export_gguf:
+  enabled: true
+  output_dir: "outputs/gguf"   # Directory for GGUF files (relative to project root)
+  quantization: "q4_k_m"        # q4_k_m (default), q8_0, f16; see scripts/export_gguf.py --list-quantizations
+  # Push to Hugging Face Hub after export (optional). Leave empty to skip.
+  push_to_hub: ""              # e.g. "username/my_model_gguf"
+  push_to_hub_private: false

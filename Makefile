@@ -1,7 +1,7 @@
 # Makefile for crisis-agent fine-tuning pipeline
 # Usage: make <target>
 
-.PHONY: help install train evaluate evaluate-ai evaluate-ai-openai evaluate-ai-gemini merge infer clean setup export-gguf export-ollama export-lmstudio
+.PHONY: help install train evaluate evaluate-ai evaluate-ai-openai evaluate-ai-gemini merge infer clean setup export-gguf export-ollama export-lmstudio optimize optimize-small optimize-balanced optimize-quality
 
 # Default target
 help:
@@ -20,6 +20,11 @@ help:
 	@echo "  make export-gguf      - Export to GGUF format (for LM Studio)"
 	@echo "  make export-ollama    - Export to GGUF and setup Ollama"
 	@echo "  make export-lmstudio  - Export to GGUF for LM Studio (q8_0)"
+	@echo "  make optimize         - Optimize model for Ollama/LM Studio (recommended)"
+	@echo "  make optimize-small   - Smallest model (~3GB, q3_k_m)"
+	@echo "  make optimize-balanced - Balanced model (~4GB, q4_k_m, recommended)"
+	@echo "  make optimize-quality  - Higher quality model (~5GB, q5_k_m)"
+	@echo "  make list-exports     - List all GGUF exports with sizes"
 	@echo "  make clean            - Clean output directories"
 	@echo ""
 
@@ -152,3 +157,28 @@ upload-gguf:
 		exit 1; \
 	fi
 	CRISIS_GGUF_EXEC_DIR=/home/jovyan python scripts/export_gguf.py --checkpoint $(CHECKPOINT) --push-to-hub $(REPO) -q $(or $(QUANT),q4_k_m)
+
+# Optimize model for Ollama/LM Studio (recommended: q4_k_m)
+optimize:
+	@echo "Optimizing model for Ollama/LM Studio (balanced: q4_k_m)..."
+	@bash scripts/optimize_model.sh --balanced --ollama
+
+# Optimize model - smallest size (~3GB)
+optimize-small:
+	@echo "Optimizing model - smallest size (q3_k_m)..."
+	@bash scripts/optimize_model.sh --small --ollama
+
+# Optimize model - balanced (recommended, ~4GB)
+optimize-balanced:
+	@echo "Optimizing model - balanced (q4_k_m, recommended)..."
+	@bash scripts/optimize_model.sh --balanced --ollama
+
+# Optimize model - higher quality (~5GB)
+optimize-quality:
+	@echo "Optimizing model - higher quality (q5_k_m)..."
+	@bash scripts/optimize_model.sh --quality --ollama
+
+# List all GGUF exports
+list-exports:
+	@echo "Listing all GGUF exports..."
+	@python scripts/export_gguf.py --list-exports --output outputs/gguf

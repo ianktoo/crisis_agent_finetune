@@ -43,8 +43,12 @@ class TestSetupLogging:
         log_dir = temp_dir / "logs"
         logger = setup_logging(log_dir=log_dir, log_to_console=False)
         
-        # Check that console handler is not present
-        console_handlers = [h for h in logger.handlers if isinstance(h, logging.StreamHandler)]
+        # Check that no console (stdout/stderr) handler is present.
+        # RotatingFileHandler is a StreamHandler subclass, so exclude FileHandler.
+        console_handlers = [
+            h for h in logger.handlers
+            if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler)
+        ]
         assert len(console_handlers) == 0
 
 

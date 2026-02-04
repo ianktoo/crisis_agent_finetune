@@ -22,7 +22,8 @@ import argparse
 import subprocess
 import contextlib
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Any
+from datetime import datetime
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -46,6 +47,121 @@ QUANTIZATION_METHODS = {
 
 def _resolve_path(p: Path) -> Path:
     return p.expanduser().resolve()
+
+
+def _format_file_size(size_bytes: int) -> dict:
+    """
+    Format file size in multiple units.
+    
+    Returns:
+        dict with 'bytes', 'mb', 'gb', and 'formatted' keys
+    """
+    size_gb = size_bytes / (1024 ** 3)
+    size_mb = size_bytes / (1024 ** 2)
+    
+    if size_gb >= 1:
+        formatted = f"{size_gb:.2f} GB ({size_mb:.0f} MB)"
+    elif size_mb >= 1:
+        formatted = f"{size_mb:.2f} MB"
+    else:
+        formatted = f"{size_bytes:,} bytes"
+    
+    return {
+        'bytes': size_bytes,
+        'mb': size_mb,
+        'gb': size_gb,
+        'formatted': formatted
+    }
+
+
+def _generate_informative_filename(
+    checkpoint_path: Path,
+    quantization: str,
+    model_name: Optional[str] = None,
+    include_date: bool = True
+) -> str:
+    """
+    Generate an informative filename for GGUF export.
+    
+    Format: {model_name}-{quantization}-{date}.gguf
+    Example: crisis-agent-v1-q4_k_m-20260204.gguf
+    
+    Args:
+        checkpoint_path: Path to checkpoint (used to extract model name)
+        quantization: Quantization method
+        model_name: Optional explicit model name (overrides checkpoint name)
+        include_date: Whether to include date in filename
+        
+    Returns:
+        Filename string (without path)
+    """
+    # Extract model name from checkpoint path if not provided
+    if model_name is None:
+        checkpoint_name = checkpoint_path.name
+        # Clean up common checkpoint names
+        if checkpoint_name in ['final', 'checkpoint']:
+            # Try parent directory
+            parent = checkpoint_path.parent.name
+            if parent and parent != 'checkpoints':
+                model_name = parent
+            else:
+                model_name = 'crisis-agent'
+        else:
+            model_name = checkpoint_name
+    else:
+        model_name = model_name
+    
+    # Sanitize model name (remove special chars, spaces)
+    model_name = model_name.replace(' ', '-').replace('_', '-')
+    # Remove any remaining special characters except hyphens
+    model_name = ''.join(c if c.isalnum() or c == '-' else '' for c in model_name)
+    
+    # Build filename parts
+    parts = [model_name, quantization]
+    
+    if include_date:
+        date_str = datetime.now().strftime("%Y%m%d")
+        parts.append(date_str)
+    
+    filename = '-'.join(parts) + '.gguf'
+    return filename
+
+
+def _rename_gguf_file(
+    original_path: Path,
+    new_filename: str,
+    logger=None
+) -> Path:
+    """
+    Rename GGUF file to informative name.
+    
+    Args:
+        original_path: Path to original GGUF file
+        new_filename: New filename (without path)
+        
+    Returns:
+        Path to renamed file
+    """
+    new_path = original_path.parent / new_filename
+    
+    # If target exists, add a counter
+    counter = 1
+    base_new_path = new_path
+    while new_path.exists():
+        stem = base_new_path.stem
+        suffix = base_new_path.suffix
+        new_path = base_new_path.parent / f"{stem}-v{counter}{suffix}"
+        counter += 1
+    
+    try:
+        original_path.rename(new_path)
+        if logger:
+            logger.info(f"Renamed: {original_path.name} -> {new_path.name}")
+        return new_path
+    except Exception as e:
+        if logger:
+            logger.warning(f"Could not rename file: {e}")
+        return original_path
 
 
 @contextlib.contextmanager
@@ -146,11 +262,119 @@ def _ensure_exec_llama_cpp(logger=None) -> Path:
     return exec_dir
 
 
+def export_to_gguf_in_memory(
+    model: Any,
+    tokenizer: Any,
+    output_dir: Path,
+    quantization: str = "q4_k_m",
+    model_name: Optional[str] = None,
+    logger=None
+) -> Path:
+    """
+    Export an in-memory model to GGUF format (no disk load).
+    Use after training to avoid reloading the model; saves memory and time.
+
+    Args:
+        model: Unsloth FastLanguageModel instance (in memory)
+        tokenizer: Tokenizer instance
+        output_dir: Directory to save GGUF files
+        quantization: Quantization method (q4_k_m, q8_0, f16, etc.)
+        logger: Logger instance
+
+    Returns:
+        Path to the exported GGUF file
+    """
+    output_dir = _resolve_path(Path(output_dir))
+    if logger:
+        logger.info(f"Exporting in-memory model to GGUF (quantization: {quantization})")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    exec_dir = _ensure_exec_llama_cpp(logger=logger)
+    with _chdir(exec_dir):
+        model.save_pretrained_gguf(
+            str(output_dir),
+            tokenizer,
+            quantization_method=quantization,
+        )
+
+    gguf_files = list(output_dir.glob("*.gguf"))
+    if gguf_files:
+        gguf_path = gguf_files[0]
+        
+        # Generate informative filename
+        informative_name = _generate_informative_filename(
+            checkpoint_path=Path("."),  # In-memory export, use generic name
+            quantization=quantization,
+            model_name=model_name or "crisis-agent"
+        )
+        
+        # Rename to informative name
+        gguf_path = _rename_gguf_file(gguf_path, informative_name, logger)
+        
+        # Display file size prominently
+        if logger:
+            size_info = _format_file_size(gguf_path.stat().st_size)
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info("GGUF Export Complete")
+            logger.info("=" * 80)
+            logger.info(f"File:     {gguf_path.name}")
+            logger.info(f"Path:     {gguf_path}")
+            logger.info(f"Size:     {size_info['formatted']}")
+            logger.info(f"          ({size_info['gb']:.3f} GB, {size_info['mb']:.0f} MB, {size_info['bytes']:,} bytes)")
+            logger.info("=" * 80)
+            logger.info("")
+        
+        return gguf_path
+    raise FileNotFoundError("GGUF file was not created")
+
+
+def push_to_hub_gguf_in_memory(
+    model: Any,
+    tokenizer: Any,
+    repo_name: str,
+    quantization: str = "q4_k_m",
+    private: bool = False,
+    logger=None
+) -> str:
+    """
+    Push an in-memory model to Hugging Face Hub as GGUF (no disk load).
+
+    Args:
+        model: Unsloth FastLanguageModel instance
+        tokenizer: Tokenizer instance
+        repo_name: Hugging Face repo name (username/repo-name)
+        quantization: Quantization method
+        private: Whether to make the repo private
+        logger: Logger instance
+
+    Returns:
+        URL of the uploaded model
+    """
+    if logger:
+        logger.info(f"Pushing GGUF to Hugging Face Hub: {repo_name} (quantization: {quantization})")
+
+    exec_dir = _ensure_exec_llama_cpp(logger=logger)
+    with _chdir(exec_dir):
+        model.push_to_hub_gguf(
+            repo_name,
+            tokenizer,
+            quantization_method=quantization,
+            private=private,
+        )
+
+    hub_url = f"https://huggingface.co/{repo_name}"
+    if logger:
+        logger.info(f"Model uploaded: {hub_url}")
+    return hub_url
+
+
 def export_to_gguf(
     checkpoint_path: Path,
     output_dir: Path,
     quantization: str = "q4_k_m",
     max_seq_length: int = 2048,
+    model_name: Optional[str] = None,
     logger = None
 ) -> Path:
     """
@@ -202,11 +426,31 @@ def export_to_gguf(
     gguf_files = list(output_dir.glob("*.gguf"))
     if gguf_files:
         gguf_path = gguf_files[0]
+        
+        # Generate informative filename from checkpoint path
+        informative_name = _generate_informative_filename(
+            checkpoint_path=checkpoint_path,
+            quantization=quantization,
+            model_name=model_name  # Use provided name or extract from checkpoint path
+        )
+        
+        # Rename to informative name
+        gguf_path = _rename_gguf_file(gguf_path, informative_name, logger)
+        
+        # Display file size prominently
         if logger:
-            logger.info(f"GGUF file created: {gguf_path}")
-            # Get file size
-            size_gb = gguf_path.stat().st_size / (1024 ** 3)
-            logger.info(f"File size: {size_gb:.2f} GB")
+            size_info = _format_file_size(gguf_path.stat().st_size)
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info("GGUF Export Complete")
+            logger.info("=" * 80)
+            logger.info(f"File:     {gguf_path.name}")
+            logger.info(f"Path:     {gguf_path}")
+            logger.info(f"Size:     {size_info['formatted']}")
+            logger.info(f"          ({size_info['gb']:.3f} GB, {size_info['mb']:.0f} MB, {size_info['bytes']:,} bytes)")
+            logger.info("=" * 80)
+            logger.info("")
+        
         return gguf_path
     else:
         raise FileNotFoundError("GGUF file was not created")
@@ -334,6 +578,83 @@ TEMPLATE """{{{{ if .System }}}}<|im_start|>system
         logger.info(f"Modelfile created: {modelfile_path}")
     
     return modelfile_path
+
+
+def list_existing_exports(
+    output_dir: Path,
+    logger = None
+) -> List[dict]:
+    """
+    List all existing GGUF exports with their sizes.
+    
+    Args:
+        output_dir: Directory to search for GGUF files
+        logger: Logger instance
+        
+    Returns:
+        List of dicts with 'path', 'name', 'size_info', 'modified' keys
+    """
+    output_dir = _resolve_path(output_dir)
+    
+    if not output_dir.exists():
+        return []
+    
+    exports = []
+    for gguf_file in sorted(output_dir.glob("*.gguf"), key=lambda p: p.stat().st_mtime, reverse=True):
+        size_info = _format_file_size(gguf_file.stat().st_size)
+        modified = datetime.fromtimestamp(gguf_file.stat().st_mtime)
+        
+        exports.append({
+            'path': gguf_file,
+            'name': gguf_file.name,
+            'size_info': size_info,
+            'modified': modified
+        })
+    
+    return exports
+
+
+def display_exports_summary(
+    output_dir: Path,
+    logger = None
+):
+    """
+    Display a formatted summary of all GGUF exports.
+    
+    Args:
+        output_dir: Directory containing GGUF files
+        logger: Logger instance (optional, uses print if None)
+    """
+    exports = list_existing_exports(output_dir, logger)
+    
+    if not exports:
+        msg = "No GGUF exports found in this directory."
+        if logger:
+            logger.info(msg)
+        else:
+            print(msg)
+        return
+    
+    # Use logger if available, otherwise print
+    log_func = logger.info if logger else print
+    
+    log_func("")
+    log_func("=" * 100)
+    log_func("Existing GGUF Exports")
+    log_func("=" * 100)
+    log_func(f"{'Filename':<60} {'Size':<20} {'Modified':<20}")
+    log_func("-" * 100)
+    
+    total_size = 0
+    for exp in exports:
+        log_func(f"{exp['name']:<60} {exp['size_info']['formatted']:<20} {exp['modified'].strftime('%Y-%m-%d %H:%M'):<20}")
+        total_size += exp['size_info']['bytes']
+    
+    log_func("-" * 100)
+    total_info = _format_file_size(total_size)
+    log_func(f"{'Total':<60} {total_info['formatted']:<20} {len(exports)} files")
+    log_func("=" * 100)
+    log_func("")
 
 
 def register_with_ollama(
@@ -474,6 +795,17 @@ Quantization Methods:
         action="store_true",
         help="List available quantization methods and exit"
     )
+    parser.add_argument(
+        "--list-exports",
+        action="store_true",
+        help="List existing GGUF exports and exit"
+    )
+    parser.add_argument(
+        "--model-name",
+        type=str,
+        default=None,
+        help="Custom model name for filename (default: extracted from checkpoint path)"
+    )
     
     args = parser.parse_args()
     
@@ -484,6 +816,13 @@ Quantization Methods:
         for method, desc in QUANTIZATION_METHODS.items():
             print(f"  {method:10s} - {desc}")
         print()
+        return
+    
+    # Setup logging for list-exports
+    if args.list_exports:
+        logger = setup_logging()
+        output_dir = Path(args.output)
+        display_exports_summary(output_dir, logger)
         return
     
     # Setup logging
@@ -534,6 +873,7 @@ Quantization Methods:
                 output_dir=output_dir,
                 quantization=args.quantization,
                 max_seq_length=args.max_seq_length,
+                model_name=args.model_name,
                 logger=logger
             )
             

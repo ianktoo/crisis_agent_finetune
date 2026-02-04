@@ -1,77 +1,172 @@
 # Documentation
 
-Welcome to the crisis-agent fine-tuning pipeline documentation!
-
-## 📖 Wiki (Recommended)
-
-For comprehensive documentation, see the **[Wiki](../wiki/Home.md)** which includes:
-
-- [Getting Started](../wiki/Getting-Started.md) - Installation and first run
-- [Configuration](../wiki/Configuration.md) - All config files explained
-- [Training Guide](../wiki/Training.md) - Complete training workflow
-- [Evaluation](../wiki/Evaluation.md) - Standard and AI-based evaluation
-- [Deployment](../wiki/Deployment.md) - HuggingFace, LM Studio, Ollama
-- [Makefile Reference](../wiki/Makefile-Reference.md) - All make commands
-- [Scripts Reference](../wiki/Scripts-Reference.md) - Script documentation
-- [Troubleshooting](../wiki/Troubleshooting.md) - Common issues and fixes
+Single entry point for all crisis-agent fine-tuning pipeline documentation.
 
 ---
 
-## 📚 Documentation Index
+## Where to start
 
-### Setup & Configuration
+| If you want to… | Start here |
+|-----------------|------------|
+| **Follow a full workflow** (install → train → evaluate → deploy) | [Wiki → Getting Started](../wiki/Getting-Started.md) |
+| **Quick reference** (commands, scripts, config) | [Wiki Home](../wiki/Home.md) |
+| **Set up environment and data** | [Setup](#setup) below |
+| **Train and name models** | [Training & model](#training--model) below |
+| **Export and deploy** (Ollama, LM Studio, Hugging Face) | [Deployment & export](#deployment--export) below |
+| **Evaluate models** | [Evaluation](#evaluation) below |
+| **Fix issues** | [Wiki → Troubleshooting](../wiki/Troubleshooting.md) |
 
-- **[Hardware Setup](hardware-setup.md)** - Server specifications, memory optimization, and performance tuning for 16GB VRAM servers
-- **[Dataset Setup](dataset-setup.md)** - Complete guide for configuring and using Hugging Face datasets
-- **[Dataset Info](dataset-info.md)** - Information about the crisis-response-training dataset
-- **[Environment Variables](environment-variables.md)** - All environment variables (HF, AI evaluation keys, etc.)
-- **[Model Naming](model-naming.md)** - Guide for controlling output model names and checkpoints
-- **[Python Compatibility](python-compatibility.md)** - Python version compatibility guide
-- **[AI Evaluation](ai-evaluation.md)** - AI-based evaluation with Claude, OpenAI, or Gemini
+---
 
-### Development & Testing
+## Wiki (workflow and reference)
 
-- **[Testing](testing.md)** - Comprehensive testing documentation, test suite guide, and best practices
+The wiki is the main narrative documentation:
 
-## Quick Links
+| Page | Description |
+|------|-------------|
+| [Home](../wiki/Home.md) | Overview and quick navigation |
+| [Getting Started](../wiki/Getting-Started.md) | Installation and first run |
+| [Configuration](../wiki/Configuration.md) | Config files (dataset, model, training) |
+| [Training](../wiki/Training.md) | Training workflow and options |
+| [Evaluation](../wiki/Evaluation.md) | Standard and AI-based evaluation |
+| [Deployment](../wiki/Deployment.md) | Hugging Face, LM Studio, Ollama |
+| [Makefile Reference](../wiki/Makefile-Reference.md) | All `make` targets |
+| [Scripts Reference](../wiki/Scripts-Reference.md) | Script usage and options |
+| [Troubleshooting](../wiki/Troubleshooting.md) | Common issues and fixes |
 
-### Getting Started
+---
 
-1. **Hardware Requirements**: Check [hardware-setup.md](hardware-setup.md) for server specifications
-2. **Dataset Configuration**: Follow [dataset-setup.md](dataset-setup.md) to set up your Hugging Face dataset
-3. **Environment Setup**: Configure [environment-variables.md](environment-variables.md) for authentication
+## Setup
 
-### Development
+Environment, hardware, and data.
 
-1. **Writing Tests**: See [testing.md](testing.md) for test writing guidelines
-2. **Running Tests**: Follow [testing.md](testing.md) for test execution instructions
-3. **Test Coverage**: Check [testing.md](testing.md) for coverage goals and reports
+| Doc | Description |
+|-----|-------------|
+| [hardware-setup.md](hardware-setup.md) | Server specs, 16GB VRAM tuning, OOM tips |
+| [environment-variables.md](environment-variables.md) | `.env`, HF token, AI eval keys |
+| [dataset-setup.md](dataset-setup.md) | Hugging Face dataset and column config |
+| [dataset-info.md](dataset-info.md) | Crisis-response dataset overview |
+| [DATASET_OPTIONS.md](DATASET_OPTIONS.md) | Dataset format and source options |
+| [llama-cpp-setup.md](llama-cpp-setup.md) | Build llama.cpp for GGUF export |
+| [python-compatibility.md](python-compatibility.md) | Supported Python versions |
 
-### Main Documentation
+---
 
-- **[Main README](../README.md)** - Project overview and quick start guide
+## Training & model
 
-## Documentation Structure
+Training, checkpoints, and naming.
+
+| Doc | Description |
+|-----|-------------|
+| [model-naming.md](model-naming.md) | Checkpoint and model naming, versioning |
+| [model-optimization.md](model-optimization.md) | Shrinking models for Ollama/LM Studio |
+| [export-naming.md](export-naming.md) | GGUF filenames and file-size display |
+
+---
+
+## Deployment & export
+
+Exporting and deploying (GGUF, Ollama, LM Studio, Hugging Face).
+
+| Doc | Description |
+|-----|-------------|
+| [model-optimization.md](model-optimization.md) | Quantization and size for local run |
+| [export-naming.md](export-naming.md) | Export filenames and listing exports |
+| [llama-cpp-setup.md](llama-cpp-setup.md) | Prerequisite for GGUF export |
+| [Wiki → Deployment](../wiki/Deployment.md) | Full deployment flow |
+
+---
+
+## Evaluation
+
+| Doc | Description |
+|-----|-------------|
+| [ai-evaluation.md](ai-evaluation.md) | AI-based evaluation (Claude, OpenAI, Gemini) |
+| [evaluation-timing.md](evaluation-timing.md) | When and how evaluation runs |
+| [Wiki → Evaluation](../wiki/Evaluation.md) | Evaluation workflow |
+
+---
+
+## Reference
+
+| Doc | Description |
+|-----|-------------|
+| [testing.md](testing.md) | Test suite, running tests, coverage |
+
+---
+
+## Root-level docs
+
+These live in the project root; use them for checklists and short guides.
+
+| File | Description |
+|------|-------------|
+| [README.md](../README.md) | Project overview and quick start |
+| [QUICK_GUIDE.md](../QUICK_GUIDE.md) | Short post-training guide |
+| [PIPELINE.md](../PIPELINE.md) | Pipeline checklist and progress |
+| [POST_TRAINING.md](../POST_TRAINING.md) | Post-training steps and HF deployment |
+| [DEPLOYMENT.md](../DEPLOYMENT.md) | Pre-training deployment checklist |
+| [DEPLOYMENT_NOTES.md](../DEPLOYMENT_NOTES.md) | Deployment notes and target repo |
+| [OPTIMIZATION_QUICKSTART.md](../OPTIMIZATION_QUICKSTART.md) | Quick model optimization for Ollama/LM Studio |
+| [TRAINING_COMMANDS.md](../TRAINING_COMMANDS.md) | Training command reference |
+| [MODEL_BRANDING.md](../MODEL_BRANDING.md) | AI Emergency Kit branding |
+| [folder-structure.md](../folder-structure.md) | Project layout |
+| [CONDA_SETUP.md](../CONDA_SETUP.md) | Conda environment setup |
+| [ENVIRONMENT_SETUP.md](../ENVIRONMENT_SETUP.md) | Environment setup |
+| [SETUP_COMPLETE.md](../SETUP_COMPLETE.md) | Setup completion checklist |
+| [CUDA_INFO.md](../CUDA_INFO.md) | CUDA / GPU info |
+| [CHANGELOG.md](../CHANGELOG.md) | Version history |
+
+---
+
+## Documentation map
 
 ```
-docs/
-├── README.md                    # This file - documentation index
-├── hardware-setup.md            # Hardware configuration and optimization
-├── dataset-setup.md             # Hugging Face dataset setup guide
-├── environment-variables.md     # Environment variables reference
-├── ai-evaluation.md             # AI evaluation (Claude, OpenAI, Gemini)
-├── model-naming.md              # Model naming and checkpoint control
-└── testing.md                   # Testing documentation and guide
+project root
+├── README.md                 # Start here (overview + quick start)
+├── DOCUMENTATION.md          # This map (where to find docs)
+├── QUICK_GUIDE.md            # Short post-training guide
+├── PIPELINE.md               # Pipeline checklist
+├── POST_TRAINING.md          # Post-training details
+├── DEPLOYMENT.md             # Deployment checklist
+├── OPTIMIZATION_QUICKSTART.md # Model size / Ollama & LM Studio
+├── TRAINING_COMMANDS.md      # Training commands
+├── MODEL_BRANDING.md         # Branding
+├── folder-structure.md       # Project layout
+├── CONDA_SETUP.md            # Conda
+├── ENVIRONMENT_SETUP.md      # Env setup
+├── SETUP_COMPLETE.md         # Setup checklist
+├── CUDA_INFO.md              # CUDA
+├── CHANGELOG.md              # History
+│
+├── docs/                     # Topic docs (you are here; all files in this dir)
+│   ├── README.md             # Doc index (this file)
+│   ├── hardware-setup.md, environment-variables.md, dataset-setup.md
+│   ├── dataset-info.md, DATASET_OPTIONS.md, llama-cpp-setup.md
+│   ├── python-compatibility.md, model-naming.md, model-optimization.md
+│   ├── export-naming.md, ai-evaluation.md, evaluation-timing.md
+│   └── testing.md
+│
+└── wiki/                     # Workflow & reference
+    ├── Home.md
+    ├── Getting-Started.md
+    ├── Configuration.md
+    ├── Training.md
+    ├── Evaluation.md
+    ├── Deployment.md
+    ├── Makefile-Reference.md
+    ├── Scripts-Reference.md
+    └── Troubleshooting.md
 ```
 
-## Project Files
+*Sections above group these files by topic; all `docs/` files live in the same directory.*
 
-- **[LICENSE](../LICENSE)** - MIT License with attribution requirements
-- **[CHANGELOG.md](../CHANGELOG.md)** - Version history and changes
+---
 
-## Need Help?
+## Quick links
 
-- Check the [main README](../README.md) for quick start instructions
-- Review the relevant documentation file for your specific task
-- Check the troubleshooting sections in each guide
-- See [testing.md](testing.md) for test-related questions
+- **Main README**: [../README.md](../README.md)
+- **Wiki home**: [../wiki/Home.md](../wiki/Home.md)
+- **Troubleshooting**: [../wiki/Troubleshooting.md](../wiki/Troubleshooting.md)
+- **Changelog**: [../CHANGELOG.md](../CHANGELOG.md)
+- **License**: [../LICENSE](../LICENSE)

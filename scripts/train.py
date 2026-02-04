@@ -5,6 +5,7 @@ Usage: python scripts/train.py [--model-name MODEL_NAME]
 
 import sys
 import argparse
+import yaml
 from pathlib import Path
 
 # Add project root to path
@@ -18,6 +19,59 @@ from src.data.format_records import format_dataset, tokenize_dataset
 from src.model.load_model import load_model_from_config
 from src.model.apply_lora import apply_lora_from_config, prepare_model_for_training
 from src.training.trainer import create_trainer, train_model
+
+
+def _load_export_gguf_config(project_root: Path) -> dict:
+    """Load export_gguf section from training config; returns empty dict if missing."""
+    config_path = project_root / "configs" / "training_config.yaml"
+    if not config_path.exists():
+        return {}
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f) or {}
+    return config.get("export_gguf") or {}
+
+
+def _run_gguf_export(trainer, project_root: Path, export_cfg: dict, logger):
+    """Export in-memory model to GGUF (and optionally push to Hub). Frees resources on failure."""
+    import importlib.util
+    export_gguf_path = project_root / "scripts" / "export_gguf.py"
+    spec = importlib.util.spec_from_file_location("export_gguf", export_gguf_path)
+    export_gguf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(export_gguf)
+    export_to_gguf_in_memory = export_gguf.export_to_gguf_in_memory
+    push_to_hub_gguf_in_memory = export_gguf.push_to_hub_gguf_in_memory
+    QUANTIZATION_METHODS = export_gguf.QUANTIZATION_METHODS
+    output_dir = Path(export_cfg.get("output_dir", "outputs/gguf"))
+    if not output_dir.is_absolute():
+        output_dir = project_root / output_dir
+    quantization = export_cfg.get("quantization", "q4_k_m")
+    if quantization not in QUANTIZATION_METHODS:
+        logger.warning(f"Unknown quantization {quantization}, using q4_k_m")
+        quantization = "q4_k_m"
+    logger.info("\n[PHASE 8] Exporting to GGUF (in-memory, no reload)...")
+    try:
+        gguf_path = export_to_gguf_in_memory(
+            model=trainer.model,
+            tokenizer=trainer.tokenizer,
+            output_dir=output_dir,
+            quantization=quantization,
+            logger=logger,
+        )
+        logger.info(f"GGUF saved: {gguf_path}")
+        push_repo = (export_cfg.get("push_to_hub") or "").strip()
+        if push_repo:
+            logger.info(f"Pushing GGUF to Hugging Face: {push_repo}")
+            push_to_hub_gguf_in_memory(
+                model=trainer.model,
+                tokenizer=trainer.tokenizer,
+                repo_name=push_repo,
+                quantization=quantization,
+                private=bool(export_cfg.get("push_to_hub_private", False)),
+                logger=logger,
+            )
+        logger.info("LM Studio: lms import " + str(gguf_path))
+    except Exception as e:
+        logger.warning(f"GGUF export failed (you can run scripts/export_gguf.py later): {e}")
 
 
 def main():
@@ -39,6 +93,11 @@ def main():
         "--no-resume",
         action="store_true",
         help="Skip existing checkpoints and start training from scratch"
+    )
+    parser.add_argument(
+        "--no-export-gguf",
+        action="store_true",
+        help="Skip automatic GGUF export after training (default: export if enabled in config)"
     )
     
     args = parser.parse_args()
@@ -131,6 +190,17 @@ def main():
         logger.info("Training completed successfully!")
         logger.info(f"Final checkpoint: {final_checkpoint}")
         logger.info("=" * 80)
+        
+        # Optional: export to GGUF in-memory (no reload; see configs/training_config.yaml)
+        export_cfg = _load_export_gguf_config(project_root)
+        do_export = export_cfg.get("enabled", False) and not args.no_export_gguf
+        if do_export:
+            _run_gguf_export(
+                trainer=trainer,
+                project_root=project_root,
+                export_cfg=export_cfg,
+                logger=logger,
+            )
         
     except KeyboardInterrupt:
         logger.warning("\nTraining interrupted by user")

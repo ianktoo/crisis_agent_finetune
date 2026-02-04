@@ -96,14 +96,16 @@ class TestValidateCrisisResponse:
         assert any("priority" in w for w in warnings)
     
     def test_expected_structure_validation(self):
-        """Test validation with expected structure."""
+        """Test validation with expected structure (common fields + expected types)."""
         response = {
             "action": "test",
-            "priority": "high"
+            "priority": "high",
+            "reasoning": "test reasoning",
+            "resources": [],
         }
         expected_structure = {
             "action": str,
-            "priority": str
+            "priority": str,
         }
         is_valid, warnings = validate_crisis_response(response, expected_structure)
         

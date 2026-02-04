@@ -158,6 +158,8 @@ crisis_agent_finetune/
 ## Support & Resources
 
 - **Main README**: [README.md](../README.md)
+- **Documentation map**: [DOCUMENTATION.md](../DOCUMENTATION.md) — where to find everything
+- **Documentation index**: [docs/README.md](../docs/README.md) — full index by topic (setup, training, deployment, evaluation)
 - **Changelog**: [CHANGELOG.md](../CHANGELOG.md)
 - **License**: [LICENSE](../LICENSE) (MIT)
 - **GitHub**: [ianktoo/crisis_agent_finetune](https://github.com/ianktoo/crisis_agent_finetune)

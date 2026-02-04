@@ -374,32 +374,31 @@ See [docs/testing.md](docs/testing.md) for comprehensive testing documentation, 
 
 ## 📚 Additional Resources
 
-### Wiki Documentation (Comprehensive)
+### Documentation
 
-- **[Wiki Home](wiki/Home.md)** - Complete documentation wiki
-- [Getting Started](wiki/Getting-Started.md) - Installation and first run
-- [Configuration](wiki/Configuration.md) - All config files explained
-- [Training Guide](wiki/Training.md) - Complete training workflow
-- [Evaluation](wiki/Evaluation.md) - Standard and AI-based evaluation
-- [Deployment](wiki/Deployment.md) - HuggingFace, LM Studio, Ollama
-- [Makefile Reference](wiki/Makefile-Reference.md) - All make commands documented
-- [Scripts Reference](wiki/Scripts-Reference.md) - Script documentation
-- [Troubleshooting](wiki/Troubleshooting.md) - Common issues and fixes
+- **[Documentation map](DOCUMENTATION.md)** — Where to find everything
+- **[Documentation index](docs/README.md)** — Full index by topic (setup, training, deployment, evaluation, reference)
+- **[Wiki Home](wiki/Home.md)** — Workflow and quick reference
+- [Getting Started](wiki/Getting-Started.md) — Installation and first run
+- [Configuration](wiki/Configuration.md) — Config files
+- [Training](wiki/Training.md) — Training workflow
+- [Evaluation](wiki/Evaluation.md) — Standard and AI evaluation
+- [Deployment](wiki/Deployment.md) — Hugging Face, LM Studio, Ollama
+- [Makefile Reference](wiki/Makefile-Reference.md) — All make targets
+- [Scripts Reference](wiki/Scripts-Reference.md) — Script documentation
+- [Troubleshooting](wiki/Troubleshooting.md) — Common issues and fixes
 
-### Other Documentation
+### Root guides and reference
 
-- [PIPELINE.md](PIPELINE.md) - Complete pipeline checklist with progress tracking
-- [MODEL_BRANDING.md](MODEL_BRANDING.md) - AI Emergency Kit branding guide and guidelines
-- [LICENSE](LICENSE) - MIT License with attribution requirements
-- [CHANGELOG.md](CHANGELOG.md) - Version history and changes
-- [docs/hardware-setup.md](docs/hardware-setup.md) - Detailed hardware configuration and optimization
-- [docs/dataset-setup.md](docs/dataset-setup.md) - Complete guide for configuring Hugging Face datasets
-- [docs/dataset-info.md](docs/dataset-info.md) - Information about the crisis-response-training dataset
-- [docs/environment-variables.md](docs/environment-variables.md) - Environment variables configuration
-- [docs/ai-evaluation.md](docs/ai-evaluation.md) - AI evaluation with Claude, OpenAI, Gemini
-- [docs/model-naming.md](docs/model-naming.md) - Guide for controlling output model names
-- [docs/testing.md](docs/testing.md) - Comprehensive testing documentation
-- [tests/README.md](tests/README.md) - Test suite structure and quick reference
+- [PIPELINE.md](PIPELINE.md) — Pipeline checklist
+- [QUICK_GUIDE.md](QUICK_GUIDE.md) — Short post-training guide
+- [POST_TRAINING.md](POST_TRAINING.md) — Post-training steps and HF deployment
+- [OPTIMIZATION_QUICKSTART.md](OPTIMIZATION_QUICKSTART.md) — Model size for Ollama/LM Studio
+- [DEPLOYMENT.md](DEPLOYMENT.md) — Deployment checklist
+- [MODEL_BRANDING.md](MODEL_BRANDING.md) — AI Emergency Kit branding
+- [CHANGELOG.md](CHANGELOG.md) — Version history
+- [LICENSE](LICENSE) — License and attribution
+- [tests/README.md](tests/README.md) — Test suite overview
 
 ### External Resources
 

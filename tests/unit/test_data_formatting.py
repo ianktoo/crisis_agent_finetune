@@ -69,11 +69,12 @@ class TestTokenizeDataset:
         try:
             formatted = format_dataset(mock_dataset, config_path=config_path)
             
-            # Mock tokenizer properly
-            def tokenize_func(examples):
+            # Mock tokenizer: must accept same kwargs as real tokenizer (truncation, max_length, etc.)
+            def tokenize_func(texts, **kwargs):
+                n = len(texts) if isinstance(texts, list) else 1
                 return {
-                    "input_ids": [[1, 2, 3] for _ in examples["text"]],
-                    "attention_mask": [[1, 1, 1] for _ in examples["text"]]
+                    "input_ids": [[1, 2, 3]] * n,
+                    "attention_mask": [[1, 1, 1]] * n,
                 }
             
             mock_tokenizer.side_effect = tokenize_func
